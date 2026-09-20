@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — Henry Aronofsky</title>
+<meta name="description" content="Portfolio of projects by Henry Aronofsky, a mechanical engineering student at Harvard College.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="mark" aria-label="Henry Aronofsky — home">HA</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="experience.html">Experience</a>
+      <a href="portfolio.html" aria-current="page">Portfolio</a>
+    </nav>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle menu">
+      <span class="nav-toggle-bars"><span></span><span></span><span></span></span>
+    </button>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
+      <a href="index.html#about">About</a>
+      <a href="index.html#education">Education</a>
+      <a href="experience.html">Experience</a>
+      <a href="portfolio.html" aria-current="page">Portfolio</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-intro">
+    <div class="wrap">
+      <span class="eyebrow">Portfolio</span>
+      <h1>Things I've built.</h1>
+    </div>
+  </section>
+
+  <section class="portfolio" id="portfolio">
+    <div class="wrap">
+      <h2 class="section-title">Portfolio</h2>
+      <div class="portfolio-grid">
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/es51/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/es51/bot.png" alt="Bumblebee competition robot" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">Bumblebee</span>
+              <span class="portfolio-desc">Competition robot built for Harvard ES51's Turf Wars</span>
+            </figcaption>
+          </a>
+        </figure>
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/es50/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/es50/circuit.png" alt="EuroRackingIt analog synth breadboard circuit" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">EuroRackingIt</span>
+              <span class="portfolio-desc">Fully analog 12-note piano built for Harvard ES50</span>
+            </figcaption>
+          </a>
+        </figure>
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/woodLab/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/woodLab/jelly-web.jpg" alt="Jellyfish motion rig at the Harvard Microrobotics Laboratory" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">Jellyfish Motion Rig</span>
+              <span class="portfolio-desc">Stepper-driven rig for jellyfish research at the Microrobotics Lab</span>
+            </figcaption>
+          </a>
+        </figure>
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/sideProjects/doubleBass/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/sideProjects/doubleBass/Playing.png" alt="Scratch-built double bass" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">Scratch-Built Double Bass</span>
+              <span class="portfolio-desc">A four-string upright bass built from reclaimed lumber</span>
+            </figcaption>
+          </a>
+        </figure>
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/sideProjects/cars/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/sideProjects/cars/engine.jpg" alt="Refitted V8 engine" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">Personal Vehicle Work</span>
+              <span class="portfolio-desc">Carburetor rebuild and engine work on a V8</span>
+            </figcaption>
+          </a>
+        </figure>
+
+        <figure class="portfolio-item">
+          <a class="portfolio-link" href="portfolio/sideProjects/plumbingAndConstruction/index.html">
+            <div class="portfolio-media">
+              <img src="portfolio/sideProjects/plumbingAndConstruction/stakes-poster.jpg" alt="Driving a stake for a fence" loading="lazy">
+            </div>
+            <figcaption>
+              <span class="portfolio-title">Plumbing &amp; Construction</span>
+              <span class="portfolio-desc">Pipe fitting, plumbing, and general construction work</span>
+            </figcaption>
+          </a>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap site-footer">
+    <p class="fineprint">Henry Aronofsky — Mechanical Engineering, Harvard College</p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

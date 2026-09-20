@@ -1,0 +1,53 @@
+  <section class="page-intro">
+    <div class="wrap">
+      <a class="project-back" href="../../portfolio.html">← Back to portfolio</a>
+      <span class="eyebrow">ES50 · Team of 2</span>
+      <h1>EuroRackingIt</h1>
+    </div>
+  </section>
+
+  <section class="project" id="project">
+    <div class="wrap">
+      <p class="project-intro">A fully analog 12-note piano, built with a teammate for Harvard ES50. The circuit turns key presses into a variable voltage, tunes and shapes that voltage into a musical waveform, and pushes it out as audio — no microcontroller involved.</p>
+
+      <div class="project-gallery">
+        <figure>
+          <div class="gallery-media">
+            <img src="circuit.png" alt="Breadboard build of the analog synth" loading="lazy">
+          </div>
+          <figcaption>Breadboard build</figcaption>
+        </figure>
+        <figure>
+          <div class="gallery-media">
+            <img src="schem.png" alt="Full circuit schematic" loading="lazy">
+          </div>
+          <figcaption>Full schematic</figcaption>
+        </figure>
+        <figure class="full-width">
+          <div class="gallery-media">
+            <img src="flow.png" alt="Signal flow block diagram, from keyboard to audio output" loading="lazy">
+          </div>
+          <figcaption>Signal flow, keyboard to audio output</figcaption>
+        </figure>
+      </div>
+
+      <div class="project-body">
+        <div class="project-section">
+          <h2>Keyboard interface</h2>
+          <p>Each of the 12 keys taps a node on a resistor ladder, so pressing a key outputs a distinct voltage down a shared bus depending on where it sits in the divider.</p>
+        </div>
+        <div class="project-section">
+          <h2>Tuning and oscillation</h2>
+          <p>That voltage passes through an emitter follower and exponential converter, then into a tuning stage built from voltage adders and dividers that space the twelve tones to the equal-tempered scale. The oscillator core uses a 40106 hex Schmitt trigger inverter — wired with a diode, resistor, and capacitor — to generate a sawtooth wave at the tuned frequency.</p>
+        </div>
+        <div class="project-section">
+          <h2>Output stage</h2>
+          <p>The sawtooth is buffered, AC-coupled, and amplified before a waveform converter shapes it into the final tone, which passes through a second AC coupler and volume control to the audio output.</p>
+        </div>
+      </div>
+
+      <div class="project-links">
+        <a class="btn btn-ghost" href="Report.pdf" target="_blank" rel="noopener">Download full report (PDF)</a>
+      </div>
+    </div>
+  </section>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EuroRackingIt — Henry Aronofsky</title>
+<meta name="description" content="EuroRackingIt: a fully analog 12-note piano built for Harvard ES50.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="../../index.html" class="mark" aria-label="Henry Aronofsky — home">HA</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="../../experience.html">Experience</a>
+      <a href="../../portfolio.html" aria-current="page">Portfolio</a>
+    </nav>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle menu">
+      <span class="nav-toggle-bars"><span></span><span></span><span></span></span>
+    </button>
+    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
+      <a href="../../index.html#about">About</a>
+      <a href="../../index.html#education">Education</a>
+      <a href="../../experience.html">Experience</a>
+      <a href="../../portfolio.html" aria-current="page">Portfolio</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="page-intro">
+    <div class="wrap">
+      <a class="project-back" href="../../portfolio.html">← Back to portfolio</a>
+      <span class="eyebrow">ES50 · Team of 2</span>
+      <h1>EuroRackingIt</h1>
+    </div>
+  </section>
+
+  <section class="project" id="project">
+    <div class="wrap">
+      <p class="project-intro">A fully analog 12-note piano, built with a teammate for Harvard ES50. The circuit turns key presses into a variable voltage, tunes and shapes that voltage into a musical waveform, and pushes it out as audio — no microcontroller involved.</p>
+
+      <div class="project-gallery">
+        <figure>
+          <div class="gallery-media">
+            <img src="circuit.png" alt="Breadboard build of the analog synth" loading="lazy">
+          </div>
+          <figcaption>Breadboard build</figcaption>
+        </figure>
+        <figure>
+          <div class="gallery-media">
+            <img src="schem.png" alt="Full circuit schematic" loading="lazy">
+          </div>
+          <figcaption>Full schematic</figcaption>
+        </figure>
+        <figure class="full-width">
+          <div class="gallery-media">
+            <img src="flow.png" alt="Signal flow block diagram, from keyboard to audio output" loading="lazy">
+          </div>
+          <figcaption>Signal flow, keyboard to audio output</figcaption>
+        </figure>
+      </div>
+
+      <div class="project-body">
+        <div class="project-section">
+          <h2>Keyboard interface</h2>
+          <p>Each of the 12 keys taps a node on a resistor ladder, so pressing a key outputs a distinct voltage down a shared bus depending on where it sits in the divider.</p>
+        </div>
+        <div class="project-section">
+          <h2>Tuning and oscillation</h2>
+          <p>That voltage passes through an emitter follower and exponential converter, then into a tuning stage built from voltage adders and dividers that space the twelve tones to the equal-tempered scale. The oscillator core uses a 40106 hex Schmitt trigger inverter — wired with a diode, resistor, and capacitor — to generate a sawtooth wave at the tuned frequency.</p>
+        </div>
+        <div class="project-section">
+          <h2>Output stage</h2>
+          <p>The sawtooth is buffered, AC-coupled, and amplified before a waveform converter shapes it into the final tone, which passes through a second AC coupler and volume control to the audio output.</p>
+        </div>
+      </div>
+
+      <div class="project-links">
+        <a class="btn btn-ghost" href="Report.pdf" target="_blank" rel="noopener">Download full report (PDF)</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap site-footer">
+    <p class="fineprint">Henry Aronofsky — Mechanical Engineering, Harvard College</p>
+  </div>
+</footer>
+
+<script src="../../script.js"></script>
+</body>
+</html>
