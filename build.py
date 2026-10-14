@@ -37,15 +37,16 @@ HEADER_TEMPLATE = """
     <nav class="nav" aria-label="Primary">
       <a href="{root}experience.html"{experience_current}>Experience</a>
       <a href="{root}portfolio.html"{portfolio_current}>Portfolio</a>
+      <a href="{root}interests.html"{interests_current}>Interests</a>
     </nav>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Toggle menu">
       <span class="nav-toggle-bars"><span></span><span></span><span></span></span>
     </button>
     <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
       <a href="{root}index.html#about">About</a>
-      <a href="{root}index.html#education">Education</a>
       <a href="{root}experience.html"{experience_current}>Experience</a>
       <a href="{root}portfolio.html"{portfolio_current}>Portfolio</a>
+      <a href="{root}interests.html"{interests_current}>Interests</a>
       <a href="{root}index.html#contact">Contact</a>
     </nav>
   </div>
@@ -92,6 +93,13 @@ PAGES = [
         description="Portfolio of projects by Henry Aronofsky, a mechanical engineering student at Harvard College.",
         nav_current="portfolio",
         content="content/portfolio.html",
+    ),
+    dict(
+        out="interests.html",
+        title="Interests — Henry Aronofsky",
+        description="Musical theater and jazz performance — what Henry Aronofsky does away from the workbench.",
+        nav_current="interests",
+        content="content/interests.html",
     ),
     dict(
         out="portfolio/es51/index.html",
@@ -154,6 +162,7 @@ def build_page(page):
         root=root,
         experience_current=current_attr("experience"),
         portfolio_current=current_attr("portfolio"),
+        interests_current=current_attr("interests"),
     )
     html += "\n" + content + "\n"
     html += FOOTER_TEMPLATE.format(root=root)
