@@ -1073,9 +1073,11 @@
       for (let i = 0; i <= N; i++) {
         const t = i / N, u = 1 - t;
         const x = u * u * x0 + 2 * u * t * cx + t * t * tx, y = u * u * H + 2 * u * t * cy + t * t * ty;
-        const w = Math.max(1, th * (1 - t * 0.7));
-        box(at(x - w / 2), sy(y - w / 2), w * Z, w * Z, '#3f7f4a');
-        if (i % 10 === 5 && w > 1.6) box(at(x + w / 2 - 0.8), sy(y), Z * 0.6, Z * 0.6, '#b7e3a0');
+        // snap to whole art pixels so the tentacle matches the rest of the sprite's resolution
+        const w = Math.max(1, Math.round(th * (1 - t * 0.7)));
+        const px = Math.round(x - w / 2), py = Math.round(y - w / 2);
+        box(at(px), sy(py), w * Z, w * Z, '#3f7f4a');
+        if (i % 10 === 5 && w >= 2) box(at(px + w - 1), sy(py + Math.floor(w / 2)), Z, Z, '#b7e3a0');
       }
     }
     function drawCthulhu(at, oy, Z) {
