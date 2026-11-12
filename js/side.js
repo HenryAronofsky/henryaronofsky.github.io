@@ -45,6 +45,10 @@
       raft: mk(A.raft()), tub: mk(A.tub()), rowboat: mk(A.rowboat()), swan: mk(A.swan()), gondola: mk(A.gondola())
     };
     const bargeArt = mk(A.barge()), rocketArt = mk(A.rocket()), flameArt = [mk(A.flame(0)), mk(A.flame(1))];
+    const teleArt = [mk(A.telescope(false)), mk(A.telescope(true))], coinArt = mk(A.coin());
+    const kongArt = [0, 1, 2].map((p) => mk(A.kong(p)));
+    const cthArt = [0, 1].map((f) => mk(A.cthulhu(f)));
+    const planeArt = [0, 1].map((f) => ({ r: mk(A.biplane(f)), l: mk(A.biplane(f).flip()) }));
 
     /* ---------------------------------------------------------- state */
     let S = 4, dpr = 1, k = 4, vw = 0, vh = 0, VW = 0, VH = 0, G = 0, SHORE = 0;
@@ -76,6 +80,13 @@
     const techZone = L.zones.findIndex((z) => z.style.sky === 'drones');
     const rocket = { state: 'pad', y: 0, v: 0, wait: 2.5 };
     let smoke = [];
+    // The coin-operated viewer at the far left end of the walk
+    const TX = L.telescope;
+    const TELE = { id: 'telescope', x: TX, kicker: 'Tourist viewer', title: 'Look across the harbor', subtitle: 'Pay 5¢ to use', cta: 'insert 5¢' };
+    const scope = { state: 'off', t: 0, used: false, paid: false, cx: 272, cy: 70, vx: 0, vy: 0, zoom: 2, left: 0, aim: null, drag: null, wheel: 0, shown: -1, keys: { left: false, right: false, up: false, down: false, run: false } };
+    const scopeHint = document.getElementById('scope-hint');
+    const scopeTime = document.getElementById('scope-time');
+    let scopeSky = null, maskC = null, maskFull = null;
     const shimmer = [];
     for (let i = 0; i < 90; i++) shimmer.push({ x: Math.random() * 3000, row: Math.random(), ph: Math.random() * 6.28, w: 2 + Math.floor(Math.random() * 3) });
 
@@ -84,8 +95,9 @@
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       vw = window.innerWidth;
       vh = window.innerHeight;
+      // Scale follows the window height only, so narrowing the window just shows
+      // less of the walk instead of shrinking the ground (phones get the vertical layout)
       S = clamp(Math.round(vh / 235), 2, 8);
-      S = Math.max(2, Math.min(S, Math.floor(vw / 300)));
       k = S * dpr;
       VW = Math.ceil(vw / S);
       VH = Math.ceil(vh / S);
@@ -98,6 +110,9 @@
       ctx.imageSmoothingEnabled = false;
       skyCanvas = SC.sky(VW + 2, SHORE + 4, SHORE);
       waters = L.zones.map((z) => waterGradient(z.style.water[0], z.style.water[1]));
+      scopeSky = SC.sky(VW + 2, VH * 2, VH * 2);
+      maskC = SC.cv(VW, VH);
+      maskFull = null;
       document.documentElement.style.setProperty('--px', S + 'px');
       if (!spawning) camera(1);
       draw();
@@ -138,6 +153,7 @@
       if (!skyCanvas) return;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
+      if (scope.state === 'open' || scope.state === 'view' || scope.state === 'close') return drawScope();
       ctx.drawImage(skyCanvas, 0, 0, skyCanvas.width * k, skyCanvas.height * k);
       // sun and clouds
       put(world.sun, VW * 0.8 - 22 - cam.x * 0.01, 4);
@@ -162,11 +178,16 @@
         put(f.img, f.x - cam.x, G + f.y);
       });
       drawStops();
-      crumbs.forEach((c) => box(c.x - cam.x, c.y, c.air ? 1 : 2, 1, '#ecc993'));
+      drawTelescope();
+      crumbs.forEach((c) => box(c.x - cam.x, G + c.y, c.air ? 1 : 2, 1, '#ecc993'));
       drawPigeons();
       drawChar();
+      drawCoin();
       drawParticles();
       layer(world.fore, SC.PARALLAX.fore, VH - 30);
+      // the screen goes dark on the way into the viewer, and lightens on the way out
+      if (scope.state === 'dark') box(0, 0, VW + 1, VH + 1, '#0b0912', clamp(scope.t / 0.3, 0, 1));
+      if (scope.state === 'out') box(0, 0, VW + 1, VH + 1, '#0b0912', clamp(1 - scope.t / 0.35, 0, 1));
     }
 
     function drawClouds(list, p, y0, spread, alpha) {
@@ -375,6 +396,7 @@
           }
         }
       } else move(dt);
+      updateScope(dt);
       camera(dt);
       const tw = L.weights(cam.x + VW * 0.4);
       zw = zw.map((w, i) => w + (tw[i] - w) * Math.min(1, dt * 2.4));
@@ -590,7 +612,7 @@
     // Stand still for about eight seconds and he starts feeding the pigeons
     function feed(dt) {
       const still = !spawning && !autoRun && char.ground && !char.plat && Math.abs(char.vx) < 1 &&
-        !keys.left && !keys.right && !keys.down && !keys.run && !char.jumpHeld && !ui.panel.isOpen();
+        !keys.left && !keys.right && !keys.down && !keys.run && !char.jumpHeld && !ui.panel.isOpen() && scope.state === 'off';
       idleT = still ? idleT + dt : 0;
       tossT = Math.max(0, tossT - dt);
       if (idleT > 8) {
@@ -599,7 +621,7 @@
           feedT = 1.2 + Math.random() * 0.7;
           tossT = 0.45;
           for (let i = 0; i < 5; i++)
-            crumbs.push({ x: char.x + char.face * 8, y: G - 20, vx: char.face * (24 + Math.random() * 46), vy: -(28 + Math.random() * 34), air: true, delay: 0.22, life: 40, land: G - 3 + Math.floor(Math.random() * 6) });
+            crumbs.push({ x: char.x + char.face * 8, y: -20, vx: char.face * (24 + Math.random() * 46), vy: -(28 + Math.random() * 34), air: true, delay: 0.22, life: 40, land: -3 + Math.floor(Math.random() * 6) });
           callPigeons();
         }
       } else feedT = 0.3;
@@ -626,6 +648,539 @@
       }
     }
 
+    /* ------------------------------------------------- tourist viewer */
+    // Walk up, drop in a nickel, and look across the harbor at the NYC skyline
+    // through a pair of binoculars. States run in order:
+    // off -> coin -> dark -> open -> view -> close -> out -> off
+    const SLOT = { x: TX, y: -30 }; // coin slot, relative to the ground line
+    const ZOOMS = [2, 3, 4];
+    const NYC = () => SC.scopeSkyline();
+
+    function drawTelescope() {
+      if (TX + 14 < cam.x || TX - 14 > cam.x + VW) return;
+      const art = teleArt[0], x = TX - 8 - cam.x, y = G - 3 - art.height;
+      const on = active === TELE;
+      if (on) {
+        const pulse = 0.3 + Math.sin(time * 4) * 0.1;
+        box(x, y, 17, 16, '#fff1a6', pulse * 0.6);
+      }
+      // the coin plate lights up once paid, and blinks to invite you over
+      const lit = (scope.state === 'coin' && scope.paid) || (scope.state !== 'off' && scope.state !== 'coin') || (on && Math.floor(time * 2.5) % 2 === 0);
+      put(teleArt[lit ? 1 : 0], x, y);
+      // a spinning coin hovers over it until you've had a look
+      if (!scope.used && !on && scope.state === 'off') {
+        const w = [3, 2, 1, 2][Math.floor(time * 6) % 4];
+        const by = y - 7 + (RM.matches ? 0 : Math.sin(time * 3) * 1.5);
+        box(x + 8.5 - w / 2, by, w, 3, w === 1 ? '#d8a62b' : '#f8d34a');
+        if (w === 3) box(x + 8, by + 1, 1, 1, '#fff1a6');
+      }
+    }
+
+    function drawCoin() {
+      if (scope.state !== 'coin' || scope.t < 0.22 || scope.paid) return;
+      const p = clamp((scope.t - 0.22) / 0.33, 0, 1);
+      const x0 = char.x - 7, y0 = G - 19, x1 = SLOT.x, y1 = G + SLOT.y;
+      const x = x0 + (x1 - x0) * p - cam.x, y = y0 + (y1 - y0) * p - Math.sin(p * Math.PI) * 11;
+      if (Math.floor(scope.t * 18) % 2) box(x, y - 1, 1, 3, '#d8a62b');
+      else put(coinArt, x - 1, y - 1);
+    }
+
+    function useTelescope() {
+      if (scope.state !== 'off' || spawning) return;
+      ui.bubble.hide();
+      const spot = TX + 16; // just to its right
+      if (Math.abs(char.x - spot) < 2 && char.ground) insertCoin();
+      else walkTo(spot, insertCoin, -1);
+    }
+    function insertCoin() {
+      if (scope.state !== 'off') return;
+      onBlur();
+      autoRun = null;
+      char.vx = 0;
+      char.face = -1;
+      tossT = 0.45;
+      Object.assign(scope, { state: 'coin', t: 0, paid: false, used: true });
+      ui.announce('You drop a nickel into the viewer.');
+    }
+    function setScope(state) {
+      scope.state = state;
+      scope.t = 0;
+    }
+
+    function updateScope(dt) {
+      if (scope.state === 'off') return;
+      scope.t += dt * (RM.matches ? 3 : 1);
+      switch (scope.state) {
+        case 'coin':
+          if (!scope.paid && scope.t > 0.55) {
+            scope.paid = true;
+            sparks(SLOT.x, G + SLOT.y, 7, '#f8d34a');
+          }
+          if (scope.t > 1.05) {
+            setScope('dark');
+            document.body.classList.add('is-scoping');
+          }
+          break;
+        case 'dark':
+          if (scope.t > 0.3) {
+            setScope('open');
+            Object.assign(scope, { cx: 205, cy: 84, vx: 0, vy: 0, zoom: 2, aim: { x: 280, y: 64 }, left: 45, shown: -1 });
+            scopeHint.hidden = false;
+            ui.announce('Looking across the harbor at the Manhattan skyline. Arrow keys look around, scroll zooms, E steps away.');
+          }
+          break;
+        case 'open':
+          if (scope.t > 0.5) setScope('view');
+          break;
+        case 'view':
+          // like the real thing, your nickel buys a little time
+          scope.left -= dt;
+          if (Math.ceil(scope.left) !== scope.shown) {
+            scope.shown = Math.max(0, Math.ceil(scope.left));
+            scopeTime.textContent = `0:${String(scope.shown).padStart(2, '0')}`;
+            scopeTime.classList.toggle('is-low', scope.shown <= 5);
+          }
+          if (scope.left <= 0) leaveScope();
+          break;
+        case 'close':
+          if (scope.t > 0.35) setScope('out');
+          break;
+        case 'out':
+          if (scope.t > 0.35) endScope();
+          break;
+      }
+      if (scope.state === 'open' || scope.state === 'view' || scope.state === 'close') {
+        look(dt);
+        updateFleet(dt);
+        updateCthulhu(dt);
+      }
+    }
+
+    // swing the viewer around: heavy, so it eases in and out
+    function look(dt) {
+      const kk = scope.keys, Z = scope.zoom;
+      const dx = (kk.right ? 1 : 0) - (kk.left ? 1 : 0), dy = (kk.down ? 1 : 0) - (kk.up ? 1 : 0);
+      if (dx || dy || scope.drag) scope.aim = null;
+      const speed = (kk.run ? 170 : 80) / Z;
+      scope.vx += (dx * speed - scope.vx) * Math.min(1, dt * 5);
+      scope.vy += (dy * speed - scope.vy) * Math.min(1, dt * 5);
+      scope.cx += scope.vx * dt;
+      scope.cy += scope.vy * dt;
+      if (scope.aim) {
+        scope.cx += (scope.aim.x - scope.cx) * Math.min(1, dt * 2.2);
+        scope.cy += (scope.aim.y - scope.cy) * Math.min(1, dt * 2.2);
+      }
+      clampScope();
+    }
+    function clampScope() {
+      scope.cx = clamp(scope.cx, 10, NYC().width - 10);
+      scope.cy = clamp(scope.cy, 18, SC.FAR_H - 6);
+    }
+    function zoomBy(d) {
+      const i = clamp(ZOOMS.indexOf(scope.zoom) + d, 0, ZOOMS.length - 1);
+      scope.zoom = ZOOMS[i];
+    }
+    function leaveScope() {
+      if (scope.state !== 'open' && scope.state !== 'view') return;
+      setScope('close');
+      scope.drag = null;
+      Object.keys(scope.keys).forEach((key) => (scope.keys[key] = false));
+      scopeHint.hidden = true;
+    }
+    function endScope() {
+      setScope('off');
+      scope.drag = null;
+      scopeHint.hidden = true;
+      document.body.classList.remove('is-scoping');
+      canvas.style.cursor = 'default';
+      idleT = 0;
+    }
+
+    // Two overlapping lenses, sized to the window
+    function lens() {
+      const r = Math.round(Math.min(VH * 0.45, VW * 0.27));
+      const off = Math.round(r * 0.74);
+      return { r, a: VW / 2 - off, b: VW / 2 + off, y: VH / 2 };
+    }
+    // The fully open mask, built once per size at art resolution: black outside the
+    // lenses, a stepped shadow just inside the rim, and a glint on the glass
+    function buildMask() {
+      const c = SC.cv(VW, VH), g = c.getContext('2d'), img = g.createImageData(VW, VH), d = img.data;
+      const { r, a, b, y: cy } = lens();
+      const ramp = [170, 110, 60, 25];
+      for (let y = 0; y < VH; y++)
+        for (let x = 0; x < VW; x++) {
+          const px = x + 0.5, py = y + 0.5;
+          const d1 = r - Math.hypot(px - a, py - cy), d2 = r - Math.hypot(px - b, py - cy);
+          const din = Math.max(d1, d2), i = (y * VW + x) * 4;
+          let al = 0, col = 11;
+          if (din <= 0) al = 255;
+          else if (din < 4) al = ramp[Math.floor(din)];
+          else
+            [[d1, d2, a], [d2, d1, b]].forEach(([di, other, cx]) => {
+              const ang = Math.atan2(py - cy, px - cx);
+              if (other < 0 && di > 5 && di < 7 && ang > -2.55 && ang < -1.85) {
+                al = 70;
+                col = 255;
+              }
+            });
+          d[i] = d[i + 1] = col;
+          d[i + 2] = col === 11 ? 18 : 255;
+          d[i + 3] = al;
+        }
+      g.putImageData(img, 0, 0);
+      return c;
+    }
+    function drawMask(iris) {
+      if (iris >= 1) {
+        if (!maskFull) maskFull = buildMask();
+        ctx.drawImage(maskFull, 0, 0, VW * k, VH * k);
+        return;
+      }
+      const g = maskC.getContext('2d'), { r, a, b, y } = lens();
+      g.globalCompositeOperation = 'source-over';
+      g.fillStyle = '#0b0912';
+      g.fillRect(0, 0, VW, VH);
+      if (iris > 0) {
+        g.globalCompositeOperation = 'destination-out';
+        [a, b].forEach((cx) => {
+          g.beginPath();
+          g.arc(cx, y, r * iris, 0, Math.PI * 2);
+          g.fill();
+        });
+      }
+      ctx.drawImage(maskC, 0, 0, VW * k, VH * k);
+    }
+
+    function putZ(img, x, y, z, alpha) {
+      if (alpha !== undefined) ctx.globalAlpha = alpha;
+      ctx.drawImage(img, R(x), R(y), img.width * z * k, img.height * z * k);
+      if (alpha !== undefined) ctx.globalAlpha = 1;
+    }
+    function drawScope() {
+      const img = NYC(), Z = scope.zoom, H = SC.FAR_H;
+      const ox = VW / 2 - scope.cx * Z, oy = VH / 2 - scope.cy * Z; // where skyline (0, 0) lands
+      const base = oy + H * Z;
+      const at = (x) => ox + x * Z; // skyline x -> screen
+      // sky, brightening towards the horizon
+      ctx.fillStyle = '#4aa8ec';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(scopeSky, 0, R(base - VH * 2), scopeSky.width * k, scopeSky.height * k);
+      // clouds drifting behind the towers
+      world.cloudsFar.forEach((c, i) => {
+        const cx = ((((i * 260 + time * (3 + i)) % 1400) + 1400) % 1400) - 200;
+        putZ(c, at(cx), oy + (((i * 17) % 34) - 18) * Z, Z, 0.9);
+      });
+      // biplanes circling the Empire State: the ones on the far side of their loop go behind it
+      fleet.forEach((p) => p.state === 'fly' && !p.front && drawPlane(p, at, oy, Z));
+      // the skyline itself (just the visible slice)
+      const sx = clamp(Math.floor(-ox / Z) - 1, 0, img.width - 1);
+      const sw = Math.min(img.width - sx, Math.ceil(VW / Z) + 3);
+      ctx.drawImage(img, sx, 0, sw, H, R(at(sx)), R(oy), sw * Z * k, H * Z * k);
+      // blinking light on One World Trade
+      if (Math.floor(time * 1.5) % 2) box(at(146), oy + 20 * Z, Z, Z, '#ff5a4a');
+      drawKong(at, oy, Z);
+      fleet.forEach((p) => p.state === 'fly' && p.front && drawPlane(p, at, oy, Z));
+      drawLiberty(at, oy, Z);
+      drawCthulhu(at, oy, Z);
+      // gulls
+      for (let i = 0; i < 3; i++) {
+        const gx = ((i * 470 + time * (14 + i * 3)) % 1400) - 200;
+        putZ(birdArt[Math.floor(time * 6 + i) % 2], at(gx), oy + (24 + i * 13 + Math.sin(time + i) * 3) * Z, Z);
+      }
+      // the harbor
+      if (base < VH) {
+        const wh = waters[0].height;
+        ctx.drawImage(waters[0], 0, 0, 1, wh, 0, R(base), canvas.width, R(VH + 1) - R(base));
+        const rows = Math.ceil(VH - base);
+        for (let r = 0; r < rows; r++) {
+          const src = H - 1 - Math.floor((r / Z) * 1.15);
+          if (src < 0) break;
+          const wob = RM.matches ? 0 : Math.round(Math.sin(time * 1.7 + r * 0.35) * (0.5 + r * 0.03));
+          ctx.globalAlpha = 0.3 * (1 - r / rows);
+          ctx.drawImage(img, sx, src, sw, 1, R(at(sx) + wob), R(base + r), sw * Z * k, k);
+        }
+        ctx.globalAlpha = 1;
+        shimmer.forEach((s) => {
+          const y = base + 2 + s.row * Math.max(0, VH - base - 4);
+          const x = ((((s.x * Z) * 0.5 + ox * 0.9) % (VW + 40)) + VW + 40) % (VW + 40) - 20;
+          const t2 = Math.sin(time * 2.4 + s.ph);
+          if (t2 > 0.35) box(x, y, s.w * Z * 0.6, 1, '#ffffff', (t2 - 0.35) * 1.1);
+        });
+        [['ferry', 300, 16, -7], ['sailR', 80, 6, 4], ['sailB', 720, 10, -3]].forEach(([name, x0, dep, v]) => {
+          const art = boatArt[name], bx = ((((x0 + time * v) % 1200) + 1200) % 1200) - 100;
+          putZ(art, at(bx), base + (dep + 2) * Z - art.height * Z, Z);
+        });
+      }
+      // planes Kong has swatted, smoking all the way down into the harbor, and their replacements
+      drawWrecks(at, oy, Z);
+      // the binocular mask, opening and closing like a shutter
+      const ease = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+      const iris = scope.state === 'open' ? ease(scope.t / 0.5) : scope.state === 'close' ? 1 - ease(scope.t / 0.35) : 1;
+      drawMask(iris);
+    }
+
+    // King Kong on top of the Empire State, swatting at the planes
+    const KONG = { x: 270, y: 35, cx: 281, cy: 45 }; // sprite corner (his hand on the mast) and body centre
+    // Each plane holds a slot in a loop around the tower. A swatted plane tumbles
+    // into the harbor, and a new one flies in from off to the side to take its slot.
+    const fleet = [0, 1, 2].map((i) => ({ i, state: 'fly', t: 0, x: 0, y: 0, vx: 0, vy: 0, face: 1, front: false, from: null }));
+    let wreckage = [], kongSwat = false, nextHit = 4 + Math.random() * 4;
+    function orbit(i) {
+      const dir = i === 1 ? -1 : 1, w = (0.5 + i * 0.13) * dir;
+      const a = time * w + i * 2.1, rx = 24 + i * 11, ry = 6 + i * 3;
+      return {
+        x: KONG.cx + 2 + Math.cos(a) * rx, y: 39 + i * 2 + Math.sin(a) * ry,
+        face: -Math.sin(a) * dir >= 0 ? 1 : -1, front: Math.sin(a) > 0
+      };
+    }
+    function bits(x, y, n, colors, speed, life) {
+      for (let j = 0; j < n; j++)
+        wreckage.push({ kind: 'bit', x, y, vx: (Math.random() - 0.5) * speed, vy: -(0.4 + Math.random() * 0.6) * speed, life, max: life, c: colors[j % colors.length] });
+    }
+    function updateFleet(dt) {
+      const H = SC.FAR_H;
+      fleet.forEach((p) => {
+        p.t += dt;
+        if (p.state === 'fly') Object.assign(p, orbit(p.i));
+        else if (p.state === 'crash') {
+          p.vy += 34 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          if (Math.random() < dt * 28) wreckage.push({ kind: 'smoke', x: p.x - p.face * 5, y: p.y - 1, vx: (Math.random() - 0.5) * 3, vy: -2, life: 1.6, max: 1.6 });
+          if (p.y >= H) {
+            bits(p.x, H, 12, ['#ffffff', '#d8eefa', '#ffffff'], 46, 0.9);
+            wreckage.push({ kind: 'ring', x: p.x, y: H, life: 1.1, max: 1.1 });
+            Object.assign(p, { state: 'gone', t: 0 });
+          }
+        } else if (p.state === 'gone') {
+          if (p.t > 1.6) {
+            const side = Math.random() < 0.5 ? -1 : 1;
+            p.from = { x: KONG.cx + side * 180, y: 10 + Math.random() * 18 };
+            Object.assign(p, { state: 'enter', t: 0, x: p.from.x, y: p.from.y, front: true });
+          }
+        } else if (p.state === 'enter') {
+          const o = orbit(p.i), u = clamp(p.t / 3.2, 0, 1), e = u * u * (3 - 2 * u);
+          const nx = p.from.x + (o.x - p.from.x) * e;
+          if (Math.abs(nx - p.x) > 0.01) p.face = nx > p.x ? 1 : -1;
+          p.x = nx;
+          p.y = p.from.y + (o.y - p.from.y) * e;
+          if (u >= 1) p.state = 'fly';
+        }
+      });
+      // Kong swipes at whatever buzzes past on his right, and now and then he connects
+      const near = fleet.find((p) => p.state === 'fly' && p.front && p.x - KONG.cx > -2 && p.x - KONG.cx < 24 && Math.abs(p.y - KONG.cy) < 12);
+      kongSwat = !!near;
+      if (near && time > nextHit) {
+        Object.assign(near, { state: 'crash', t: 0, vx: 20 + Math.random() * 10, vy: -16, face: 1 });
+        bits(near.x, near.y, 8, ['#fff1a6', '#ffffff', '#f28c38'], 50, 0.5);
+        nextHit = time + 6 + Math.random() * 7;
+      }
+      wreckage.forEach((w) => {
+        w.life -= dt;
+        w.x += (w.vx || 0) * dt;
+        w.y += (w.vy || 0) * dt;
+        if (w.kind === 'bit') w.vy += 70 * dt;
+      });
+      wreckage = wreckage.filter((w) => w.life > 0);
+    }
+    function drawWrecks(at, oy, Z) {
+      const sy = (y) => oy + y * Z;
+      wreckage.forEach((w) => {
+        const a = clamp(w.life / w.max, 0, 1);
+        if (w.kind === 'smoke') {
+          const r = 1 + (1 - a) * 3;
+          box(at(w.x - r), sy(w.y - r * 0.6), r * 2 * Z, r * 1.2 * Z, '#5d5f6b', a * 0.7);
+          box(at(w.x - r * 0.6), sy(w.y - r), r * 1.2 * Z, r * 2 * Z, '#5d5f6b', a * 0.7);
+        } else if (w.kind === 'ring') {
+          const r = 2 + (1 - a) * 12;
+          box(at(w.x - r), sy(w.y), r * 2 * Z, Z * 0.5, '#ffffff', a);
+        } else box(at(w.x), sy(w.y), Z, Z, w.c, a);
+      });
+      fleet.forEach((p) => {
+        if (p.state === 'enter') drawPlane(p, at, oy, Z);
+        if (p.state !== 'crash') return;
+        // tumbling, on fire
+        const f = planeArt[Math.floor(time * 16) % 2], tumble = Math.floor(p.t * 9) % 2;
+        putZ(tumble ? f.l : f.r, at(p.x - 7), sy(p.y - 4 + (tumble ? 1 : 0)), Z);
+        if (Math.floor(time * 14) % 2) box(at(p.x - 2), sy(p.y - 2), Z * 2, Z * 2, '#f28c38');
+        else box(at(p.x - 1), sy(p.y - 3), Z * 2, Z * 2, '#ffd65a');
+      });
+    }
+    function drawPlane(p, at, oy, Z) {
+      const f = planeArt[Math.floor(time * 16 + p.i) % 2], art = p.face > 0 ? f.r : f.l;
+      putZ(art, at(p.x - 7), oy + (p.y - 4) * Z, Z);
+      // firing at Kong as they close in
+      const toKong = KONG.cx - p.x;
+      if (p.state !== 'fly' || !p.front || Math.sign(toKong) !== p.face || Math.abs(toKong) < 12 || Math.abs(toKong) > 70) return;
+      const nose = p.x + p.face * 7;
+      for (let j = 0; j < 3; j++) {
+        const d = ((time * 55 + j * 9) % 27) + 2, tx = nose + p.face * d;
+        if (Math.abs(tx - p.x) < Math.abs(toKong) - 4) box(at(tx), oy + (p.y + 0.5) * Z, Z * 2, Z * 0.5, '#fff1a6');
+      }
+      if (Math.floor(time * 12) % 2) box(at(nose), oy + p.y * Z, Z, Z, '#ffd65a');
+    }
+    function drawKong(at, oy, Z) {
+      // swiping at a plane, or beating his chest now and then
+      const pose = kongSwat ? 1 : time % 4.5 < 0.9 ? (Math.floor(time * 8) % 2 ? 2 : 0) : 0;
+      // the mast he's clinging to, picked out so it reads against the sky
+      box(at(272), oy + 30 * Z, Z, 9 * Z, '#7f97bd');
+      box(at(271), oy + 38 * Z, Z * 2, 8 * Z, '#8fa8cc');
+      if (Math.floor(time * 1.5) % 2) box(at(272), oy + 29 * Z, Z, Z, '#ff5a4a');
+      putZ(kongArt[pose], at(KONG.x), oy + KONG.y * Z, Z);
+    }
+    // Cthulhu, risen from the East River, tearing at the middle of the Brooklyn Bridge
+    const CTH = { x: 528, deck: SC.FAR_H - 22 };
+    const CARS = ['#d8443a', '#f8d34a', '#4f8ad1', '#ffffff', '#6a7284', '#8e94a0'];
+    let slam = 0, slamNext = 2.5, impact = 0, shake = 0, debris = [], rippleT = 0;
+    function updateCthulhu(dt) {
+      const H = SC.FAR_H;
+      // every few seconds a tentacle comes down on the deck
+      slam = Math.max(0, slam - dt);
+      shake = Math.max(0, shake - dt);
+      slamNext -= dt;
+      if (slamNext <= 0 && !slam) {
+        slam = 0.9;
+        impact = 0.27;
+        slamNext = 3.5 + Math.random() * 3.5;
+      }
+      if (impact > 0 && (impact -= dt) <= 0) {
+        shake = 0.4;
+        for (let j = 0; j < 8; j++)
+          debris.push({ x: CTH.x + 10 + Math.random() * 14, y: CTH.deck - 1, vx: (Math.random() - 0.3) * 34, vy: -(12 + Math.random() * 26), c: CARS[j % CARS.length], car: j % 3 !== 2 });
+        bits(CTH.x + 16, CTH.deck - 1, 6, ['#b3bfd0', '#8a97ad', '#fff1a6'], 40, 0.5);
+      }
+      debris.forEach((d) => {
+        d.vy += 70 * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        if (d.y >= H && !d.sunk) {
+          d.sunk = true;
+          bits(d.x, H, 5, ['#ffffff', '#d8eefa'], 30, 0.7);
+          wreckage.push({ kind: 'ring', x: d.x, y: H, life: 0.8, max: 0.8 });
+        }
+      });
+      debris = debris.filter((d) => !d.sunk);
+      // the river churns around him
+      if ((rippleT -= dt) <= 0) {
+        rippleT = 0.7 + Math.random() * 0.6;
+        wreckage.push({ kind: 'ring', x: CTH.x + (Math.random() - 0.5) * 30, y: H, life: 1.3, max: 1.3 });
+      }
+    }
+    // a tapering tentacle along a curve out of the water, with suckers down one side
+    function tentacle(at, sy, Z, x0, cx, cy, tx, ty, th) {
+      const H = SC.FAR_H, N = 90;
+      for (let i = 0; i <= N; i++) {
+        const t = i / N, u = 1 - t;
+        const x = u * u * x0 + 2 * u * t * cx + t * t * tx, y = u * u * H + 2 * u * t * cy + t * t * ty;
+        const w = Math.max(1, th * (1 - t * 0.7));
+        box(at(x - w / 2), sy(y - w / 2), w * Z, w * Z, '#3f7f4a');
+        if (i % 10 === 5 && w > 1.6) box(at(x + w / 2 - 0.8), sy(y), Z * 0.6, Z * 0.6, '#b7e3a0');
+      }
+    }
+    function drawCthulhu(at, oy, Z) {
+      const sy = (y) => oy + y * Z, H = SC.FAR_H, cx = CTH.x;
+      const bob = RM.matches ? 0 : Math.sin(time * 1.3);
+      const sway = (sp, ph, a) => (RM.matches ? 0 : Math.sin(time * sp + ph) * a);
+      // tentacles reaching up behind the bridge
+      tentacle(at, sy, Z, cx - 24, cx - 36, 96, cx - 27 + sway(1.7, 0, 4), 70 + sway(1.7, 1.5, 3), 3.2);
+      tentacle(at, sy, Z, cx + 27, cx + 40, 100, cx + 31 + sway(1.4, 1, 5), 77 + sway(1.4, 2.5, 3), 3.2);
+      // the great one himself
+      const art = cthArt[Math.floor(time * 2.2) % 2];
+      putZ(art, at(cx - 21), sy(H - art.height + 1 + bob), Z);
+      const glow = 0.35 + Math.sin(time * 3) * 0.25;
+      box(at(cx - 5.5), sy(H - 35 + bob), Z * 4, Z * 3, '#fff1a6', glow);
+      box(at(cx + 1.5), sy(H - 35 + bob), Z * 4, Z * 3, '#fff1a6', glow);
+      // the deck runs in front of his chest, buckling when he hits it
+      const dy = shake > 0 ? (Math.floor(time * 30) % 2 ? 1 : 0) : 0;
+      box(at(cx - 26), sy(CTH.deck + dy), Z * 52, Z * 2, '#8a97ad');
+      box(at(cx - 26), sy(CTH.deck + 2 + dy), Z * 52, Z, '#b3bfd0');
+      // claws hooked over the deck
+      [cx - 13, cx + 9].forEach((hx) => {
+        box(at(hx), sy(CTH.deck - 2.5 + dy), Z * 5, Z * 3, '#3a8a46');
+        for (let c = 0; c < 3; c++) box(at(hx + 0.5 + c * 1.6), sy(CTH.deck + 0.5 + dy), Z * 0.8, Z * 2, '#fff4d6');
+      });
+      // a tentacle wrapped round the front of the deck
+      tentacle(at, sy, Z, cx - 19, cx - 31, CTH.deck + 4, cx - 21 + sway(2, 0, 1.5), CTH.deck - 4, 3);
+      // the slammer: raised high, then brought down on the roadway
+      let tx = cx + 27 + sway(2, 0.5, 2), ty = 64 + sway(2, 0, 4);
+      if (slam > 0) {
+        const p = 1 - slam / 0.9;
+        const down = p < 0.3 ? p / 0.3 : p < 0.55 ? 1 : 1 - (p - 0.55) / 0.45;
+        const e = down * down * (3 - 2 * down);
+        tx += (cx + 15 - tx) * e;
+        ty += (CTH.deck - 3 - ty) * e;
+      }
+      tentacle(at, sy, Z, cx + 19, cx + 36, 98, tx, ty, 3.6);
+      // cars and chunks of roadway flung off into the river
+      debris.forEach((d) => box(at(d.x), sy(d.y), Z * (d.car ? 2 : 1), Z, d.c));
+    }
+
+    // Lady Liberty waves her torch at you
+    function drawLiberty(at, oy, Z) {
+      const th = 0.25 + (RM.matches ? 0 : Math.sin(time * 4.2) * 0.45), sn = Math.sin(th), cs = Math.cos(th);
+      for (let i = 0; i < 10; i++) box(at(Math.round(26 + sn * i)), oy + Math.round(100 - cs * i) * Z, Z, Z, '#86c7b8');
+      const tx = Math.round(26 + sn * 10.5), ty = Math.round(100 - cs * 10.5);
+      box(at(tx - 1), oy + (ty - 1) * Z, Z * 3, Z * 2, '#ffd65a');
+      box(at(tx), oy + (ty - 2) * Z, Z, Z, '#fff1a6');
+      const tw = Math.sin(time * 3.1);
+      if (tw > 0.4) {
+        const fx = at(tx), fy = oy + (ty - 2.5) * Z, a = (tw - 0.4) * 1.6;
+        box(fx - Z, fy, Z * 3, Z * 0.5, '#fff8d8', a);
+        box(fx + Z * 0.25, fy - Z, Z * 0.5, Z * 2.5, '#fff8d8', a);
+      }
+    }
+
+    function scopeKey(e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const down = e.type === 'keydown';
+      const viewing = scope.state === 'open' || scope.state === 'view';
+      if (e.code === 'Escape' || e.code === 'KeyE') {
+        e.preventDefault();
+        if (down && !e.repeat) leaveScope();
+        return;
+      }
+      if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.code === 'Minus' || e.code === 'NumpadSubtract') {
+        e.preventDefault();
+        if (down && viewing) zoomBy(e.code === 'Minus' || e.code === 'NumpadSubtract' ? -1 : 1);
+        return;
+      }
+      const act = CODES[e.code];
+      if (!act || act === 'open') return;
+      e.preventDefault();
+      if (!viewing && down) return;
+      if (act === 'jump') scope.keys.up = down;
+      else scope.keys[act] = down;
+    }
+    function onDragStart(e) {
+      if (scope.state !== 'view' && scope.state !== 'open') return;
+      scope.drag = { x: e.clientX, y: e.clientY, cx: scope.cx, cy: scope.cy };
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ }
+      canvas.style.cursor = 'grabbing';
+    }
+    function onDrag(e) {
+      if (!scope.drag) return;
+      const d = S * scope.zoom;
+      scope.cx = scope.drag.cx - (e.clientX - scope.drag.x) / d;
+      scope.cy = scope.drag.cy - (e.clientY - scope.drag.y) / d;
+      scope.aim = null;
+      scope.vx = scope.vy = 0;
+      clampScope();
+    }
+    function onDragEnd() {
+      if (!scope.drag) return;
+      scope.drag = null;
+      canvas.style.cursor = 'grab';
+    }
+    function onWheel(e) {
+      if (scope.state !== 'view' && scope.state !== 'open') return;
+      e.preventDefault();
+      scope.wheel += e.deltaY;
+      if (Math.abs(scope.wheel) < 40) return;
+      zoomBy(scope.wheel < 0 ? 1 : -1);
+      scope.wheel = 0;
+    }
+
     /* ---------------------------------------------------- UI syncing */
     let pendingOpen = null;
     function nearestStop() {
@@ -641,12 +1196,14 @@
     function updateUI() {
       // pop-up bubble
       const fast = autoRun && Math.abs(char.vx) > 260;
-      const s = spawning || fast ? null : nearestStop();
+      const busy = spawning || fast || scope.state !== 'off';
+      let s = busy ? null : nearestStop();
+      if (!s && !busy && Math.abs(char.x - (TX + 12)) < (active === TELE ? 30 : 24)) s = TELE;
       if (s !== active) {
         active = s;
         if (s) {
           ui.bubble.show(s);
-          ui.setVisited(s.id);
+          if (s !== TELE) ui.setVisited(s.id);
           sparks(s.x, G - 36, 6);
         } else ui.bubble.hide();
       }
@@ -674,10 +1231,11 @@
       titleEl.style.transform = `translate(${Math.round(-dx * 0.55 * S)}px, 0)`;
       // controls guide follows its spot in the world
       if (guideShown && !guideGone) {
-        const gx = Math.max(controlsEl.offsetWidth + 10, (L.spawn - 18 - cam.x) * S);
-        controlsEl.style.transform = `translate(${Math.round(gx)}px, ${Math.round((G - 12) * S)}px) translate(-100%, -100%)`;
+        const half = controlsEl.offsetWidth / 2;
+        const gx = clamp((L.spawn - cam.x) * S, half + 10, Math.max(half + 10, vw - half - 10));
+        controlsEl.style.transform = `translate(${Math.round(gx)}px, ${Math.round((G - 38) * S - 8)}px) translate(-50%, -100%)`;
         const done = ui.controls.done;
-        if ((done.has('move') && walked > 160) || char.x > L.stops[0].x - 60) {
+        if ((done.has('move') && walked > 160) || char.x > L.stops[0].x - 60 || char.x < TX + 40) {
           guideGone = true;
           ui.controls.hide();
         }
@@ -699,6 +1257,7 @@
       const act = CODES[e.code];
       const down = e.type === 'keydown';
       if (ui.panel.isOpen()) return;
+      if (scope.state !== 'off') return scopeKey(e);
       if (!act || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = document.activeElement;
       if (el && el !== document.body && (e.code === 'Space' || e.code === 'Enter') && el.matches('button, a, [tabindex]')) return;
@@ -723,15 +1282,23 @@
     function hitStop(pt) {
       return L.stops.find((s, i) => Math.abs(pt.x - s.x) < 16 && pt.y > stopIconY(s, i) - 6 && pt.y < G);
     }
+    function hitTele(pt) {
+      return Math.abs(pt.x - TX) < 10 && pt.y > G - 42 && pt.y < G;
+    }
     function onClick(e) {
-      if (spawning) return;
+      if (spawning || scope.state !== 'off') return;
       const pt = worldAt(e);
+      if (hitTele(pt)) return useTelescope();
       const s = hitStop(pt);
       if (s) return goTo(s.id, true);
       walkTo(pt.x);
     }
     function onMove(e) {
-      canvas.style.cursor = hitStop(worldAt(e)) ? 'pointer' : 'default';
+      if (scope.state !== 'off') canvas.style.cursor = scope.drag ? 'grabbing' : 'grab';
+      else {
+        const pt = worldAt(e);
+        canvas.style.cursor = hitStop(pt) || hitTele(pt) ? 'pointer' : 'default';
+      }
     }
 
     /* -------------------------------------------------- navigation API */
@@ -764,6 +1331,7 @@
       else walkTo(standX(L.stops.find((s) => s.chapter === id)), null, 1);
     }
     function open(id) {
+      if (id === TELE.id) return useTelescope();
       const s = content.stops.find((x) => x.id === id);
       if (!s) return;
       onBlur();
@@ -818,6 +1386,11 @@
       window.addEventListener('blur', onBlur);
       canvas.addEventListener('click', onClick);
       canvas.addEventListener('mousemove', onMove);
+      canvas.addEventListener('pointerdown', onDragStart);
+      canvas.addEventListener('pointermove', onDrag);
+      canvas.addEventListener('pointerup', onDragEnd);
+      canvas.addEventListener('pointercancel', onDragEnd);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
       play();
     }
 
@@ -829,6 +1402,12 @@
       window.removeEventListener('blur', onBlur);
       canvas.removeEventListener('click', onClick);
       canvas.removeEventListener('mousemove', onMove);
+      canvas.removeEventListener('pointerdown', onDragStart);
+      canvas.removeEventListener('pointermove', onDrag);
+      canvas.removeEventListener('pointerup', onDragEnd);
+      canvas.removeEventListener('pointercancel', onDragEnd);
+      canvas.removeEventListener('wheel', onWheel);
+      if (scope.state !== 'off') endScope();
       ui.bubble.hide();
       ui.chrome(false);
       active = null;
@@ -841,7 +1420,7 @@
 
     return {
       start, stop, play, pause, goTo, goChapter, open,
-      debug: () => ({ x: char.x, y: char.y, vx: char.vx, ground: char.ground, spawning, spawnT, cam: cam.x, S, VW, VH, active: active && active.id, chapter, time })
+      debug: () => ({ x: char.x, y: char.y, vx: char.vx, ground: char.ground, spawning, spawnT, cam: cam.x, S, VW, VH, active: active && active.id, chapter, time, scope: scope.state, planes: fleet.map((p) => p.state) })
     };
   }
 

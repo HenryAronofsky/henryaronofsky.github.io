@@ -11,7 +11,7 @@
   HA.ui.init(content, {
     onNav: (id) => mode && mode.goChapter(id),
     onOpen: (id) => mode && mode.open(id),
-    onGo: (id) => mode && mode.goTo(id, false),
+    onGo: (id, openAfter) => mode && mode.goTo(id, !!openAfter),
     onPanel(open) {
       if (open) return;
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* file:// */ }

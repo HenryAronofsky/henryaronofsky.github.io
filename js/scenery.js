@@ -125,7 +125,10 @@
     const taken = [];
     const free = (a, b) => taken.every(([c, d]) => b < c || a > d);
     const place = (a, b) => free(a, b) && taken.push([a, b]) > 0;
-    taken.push([L.spawn - 36, L.spawn + 36], [L.highway - 40, L.highway + 40], [L.welcome - 30, L.welcome + 30], [L.end - 10, Infinity]);
+    // A coin-operated viewer at the far left end, looking out at the skyline:
+    // the same gap either side of it, to the edge of the world and to the first lamp
+    L.telescope = 27;
+    taken.push([L.telescope - 10, L.telescope + 10], [L.spawn - 36, L.spawn + 36],[L.highway - 40, L.highway + 40], [L.welcome - 30, L.welcome + 30], [L.end - 10, Infinity]);
     L.stops.forEach((s) => {
       const r = s.landmark === 'church' ? 44 : s.landmark === 'gate' ? 66 : 14;
       taken.push([s.x - r, s.x + r]);
@@ -254,6 +257,30 @@
       for (let xx = x + 2; xx < x + w - 2; xx += 2)
         if ((xx * 7 + yy * 13) % 5) rect(g, xx, yy, 1, 1, k.win);
   }
+  // A strip of land along the water's edge: promenade (with a few trees) on top
+  // of a stone seawall, so the buildings stand on the shore instead of in the river
+  function shoreline(g, B, x0, x1, o) {
+    const r = rng(o.seed || 5), w = x1 - x0;
+    rect(g, x0, B - 5, w, 2, o.land);
+    rect(g, x0, B - 5, w, 1, o.top || '#bccbc6');
+    rect(g, x0, B - 3, w, 2, o.wall || '#97a1b2');
+    rect(g, x0, B - 1, w, 1, o.waterline || '#7f8aa0');
+    for (let x = x0 + 2; x < x1 - 3; x += 5 + Math.floor(r() * (o.dense ? 4 : 9))) {
+      if (r() < 0.3 && !o.dense) continue;
+      rect(g, x + 1, B - 7, 1, 2, '#8f8a86');
+      rect(g, x, B - 9, 3, 2, o.tree);
+      rect(g, x + 1, B - 10, 1, 1, o.tree);
+    }
+  }
+  // A pier jutting into the river: a long shed on a deck held up by pilings
+  function pier(g, B, x, w) {
+    rect(g, x, B - 3, w, 1, '#8a93a3');
+    for (let px = x + 1; px < x + w; px += 3) rect(g, px, B - 2, 1, 2, '#6f7a8c');
+    rect(g, x + 2, B - 9, w - 4, 6, '#bcc6d2');
+    rect(g, x + 1, B - 10, w - 2, 1, '#d5dde6');
+    rect(g, x + w - 3, B - 9, 1, 6, '#d5dde6');
+    for (let dx = x + 4; dx < x + w - 4; dx += 4) rect(g, dx, B - 7, 2, 3, '#9aa6b6');
+  }
   // Wooden NYC rooftop water tank
   function tank(g, x, top, k) {
     rect(g, x, top - 2, 1, 2, k.dark);
@@ -262,7 +289,8 @@
     rect(g, x + 1, top - 8, 2, 2, k.wood || k.dark);
   }
 
-  function skylineNYC() {
+  // arm: Lady Liberty's torch arm (left off for the binocular view, which animates it)
+  function skylineNYC(arm = true) {
     const W = 1000, B = FAR_H, c = cv(W, FAR_H), g = c.getContext('2d'), r = rng(11);
     const FAR = { body: '#b9cde6', lit: '#d6e5f4', dark: '#a7bfdc', win: '#cadbef', wood: '#b9b2b6' };
     const MID = { body: '#9cb7da', lit: '#c4d8ee', dark: '#88a5cf', win: '#b2c9e6', wood: '#a99d9e' };
@@ -317,34 +345,61 @@
     rect(g, sl - 3, B - 17, 6, 10, '#c4cdd2');
     rect(g, sl - 2, B - 29, 4, 12, GREEN);
     rect(g, sl - 1, B - 32, 3, 3, GREEN);
-    rect(g, sl + 2, B - 38, 1, 9, GREEN);
-    rect(g, sl + 1, B - 40, 3, 2, '#ffd65a');
+    if (arm) {
+      rect(g, sl + 2, B - 38, 1, 9, GREEN);
+      rect(g, sl + 1, B - 40, 3, 2, '#ffd65a');
+    }
     rect(g, sl - 3, B - 25, 1, 3, GREEN);
-    // Brooklyn Bridge: granite tower, gothic arches, cables
-    const bb = 398, T = '#cdc6bb', TD = '#b6aea1', CAB = '#8e9db4';
-    rect(g, bb - 150, B - 22, 450, 2, '#8a97ad');
-    rect(g, bb - 150, B - 20, 450, 1, '#b3bfd0');
-    for (const side of [-1, 1]) {
-      const span = side < 0 ? 150 : 260;
-      let px = bb, py = B - 60;
+    // Up the East River, hazy and far off, seen between the two shores
+    const far = rng(12);
+    for (let x = 392; x < 676; x += 4 + Math.floor(far() * 6)) rect(g, x, B - 4 - Math.floor(far() * 9), 3 + Math.floor(far() * 5), 14, '#c5d7ec');
+    rect(g, 392, B - 3, 284, 3, '#b9cbe0');
+    // Brooklyn Bridge: two granite towers in the river, gothic arches, cables
+    const bb = 398, bk = 658, T = '#cdc6bb', TD = '#b6aea1', CAB = '#8e9db4';
+    const DECK0 = 244, DECK1 = 722; // both ends tuck behind a building
+    rect(g, DECK0, B - 22, DECK1 - DECK0, 2, '#8a97ad');
+    rect(g, DECK0, B - 20, DECK1 - DECK0, 1, '#b3bfd0');
+    // main cable, plus a side span off each tower down to its anchorage
+    const cable = (x0, x1, f) => {
+      let px = x0, py = f(0), last = Math.round(x0);
       for (let i = 1; i <= 120; i++) {
-        const t = i / 120, x = bb + side * t * span, y = B - 60 + 36 * Math.sin(t * Math.PI * (side < 0 ? 0.5 : 1));
+        const t = i / 120, x = x0 + (x1 - x0) * t, y = f(t), col = Math.round(x);
         line(g, px, py, x, y, CAB);
-        if (i % 2 === 0) rect(g, x, y, 1, B - 22 - y, 'rgba(226,234,244,0.8)');
+        // a hanger every third column, however long the span
+        if (col !== last && col % 3 === 0 && y < B - 23) rect(g, col, y, 1, B - 22 - y, 'rgba(226,234,244,0.8)');
+        last = col;
         px = x; py = y;
       }
-      for (let i = 1; i <= 5; i++) line(g, bb, B - 58, bb + side * i * 16, B - 22, CAB);
+    };
+    cable(bb, bk, (t) => B - 60 + 36 * Math.sin(t * Math.PI));
+    cable(bb, DECK0, (t) => B - 60 + 38 * Math.sin((t * Math.PI) / 2));
+    cable(bk, DECK1, (t) => B - 60 + 38 * Math.sin((t * Math.PI) / 2));
+    for (let i = 1; i <= 5; i++) {
+      line(g, bb, B - 58, bb - i * 16, B - 22, CAB);
+      line(g, bb, B - 58, bb + i * 16, B - 22, CAB);
+      line(g, bk, B - 58, bk - i * 16, B - 22, CAB);
+      if (i <= 3) line(g, bk, B - 58, bk + i * 16, B - 22, CAB);
     }
-    rect(g, bb - 8, B - 62, 16, 62, T);
-    rect(g, bb - 9, B - 64, 18, 2, TD);
-    rect(g, bb + 7, B - 62, 1, 62, '#e0dbd2');
-    for (const ax of [bb - 5, bb + 2]) {
-      rect(g, ax, B - 46, 3, 22, '#cfe6f6');
-      rect(g, ax + 1, B - 48, 1, 2, '#cfe6f6');
-    }
-    rect(g, bb - 8, B - 22, 16, 2, '#8a97ad');
-    // Brooklyn beyond the bridge
-    for (let i = 0; i < 30; i++) block(g, B, 430 + r() * 560, 8 + r() * 14, 10 + r() * 26, MID, { tank: r() < 0.5 });
+    [bb, bk].forEach((tx) => {
+      rect(g, tx - 8, B - 62, 16, 62, T);
+      rect(g, tx - 9, B - 64, 18, 2, TD);
+      rect(g, tx + 7, B - 62, 1, 62, '#e0dbd2');
+      for (const ax of [tx - 5, tx + 2]) {
+        rect(g, ax, B - 46, 3, 22, '#cfe6f6');
+        rect(g, ax + 1, B - 48, 1, 2, '#cfe6f6');
+      }
+      rect(g, tx - 8, B - 22, 16, 2, '#8a97ad');
+      rect(g, tx - 10, B - 3, 20, 3, TD); // footing in the water
+    });
+    // Brooklyn (DUMBO and the Heights) across the water
+    for (let i = 0; i < 24; i++) block(g, B, 682 + r() * 308, 8 + r() * 14, 10 + r() * 26, MID, { tank: r() < 0.5 });
+    // where the bridge comes ashore, it disappears between buildings
+    block(g, B, 232, 18, 36, MID, { tank: true });
+    block(g, B, 712, 18, 32, MID, { tank: true });
+    // The waterfront: a seawall and promenade along each shore, with piers out into the river
+    shoreline(g, B, 46, 388, { land: '#a7b6b4', tree: '#93b4a0', seed: 31 });
+    shoreline(g, B, 676, W, { land: '#a7b6b4', tree: '#93b4a0', seed: 37 });
+    [[64, 22], [124, 16], [296, 26], [744, 20], [866, 24]].forEach(([x, w]) => pier(g, B, x, w));
     return c;
   }
 
@@ -383,13 +438,6 @@
     }
     rect(g, sh - 1, B - 28, 3, 4, '#e8e3dc');
     rect(g, sh, B - 31, 1, 3, '#f3cc58');
-    // Longfellow Bridge (salt-and-pepper towers)
-    rect(g, 560, B - 7, 230, 3, '#b7b0a8');
-    for (let x = 566; x < 790; x += 22) rect(g, x, B - 4, 12, 4, '#9e978f');
-    [600, 640, 710, 750].forEach((x) => {
-      rect(g, x, B - 17, 5, 10, '#cfc8be');
-      rect(g, x + 1, B - 19, 3, 2, '#b7b0a8');
-    });
     // Downtown towers
     for (let i = 0; i < 18; i++) block(g, B, 800 + r() * 260, 10 + r() * 14, 40 + r() * 34, MID, { bands: r() < 0.5, step: r() < 0.3 ? 4 : 0 });
     block(g, B, 840, 16, 78, MID, { bands: true, antenna: 8 });
@@ -420,6 +468,21 @@
     // Bunker Hill Monument
     rect(g, 1420, B - 38, 4, 38, '#d4cec6');
     rect(g, 1421, B - 41, 2, 3, '#d4cec6');
+    // the Zakim's deck runs in between buildings at both ends
+    block(g, B, 1064, 20, 30, MID, { bands: true });
+    block(g, B, 1404, 14, 22, BRICK);
+    // The riverbank: the tree-lined Esplanade along Back Bay, then a seawall downtown
+    shoreline(g, B, 90, 640, { land: '#9fbf9a', top: '#b7d2ae', tree: '#86b08c', dense: true, seed: 41 });
+    shoreline(g, B, 640, 1490, { land: '#a9b6b3', tree: '#93b4a0', seed: 43 });
+    pier(g, B, 470, 18); // the boathouse dock
+    pier(g, B, 1000, 22);
+    // Longfellow Bridge (salt-and-pepper towers), standing out in the river
+    rect(g, 560, B - 7, 230, 3, '#b7b0a8');
+    for (let x = 566; x < 790; x += 22) rect(g, x, B - 4, 12, 4, '#9e978f');
+    [600, 640, 710, 750].forEach((x) => {
+      rect(g, x, B - 17, 5, 10, '#cfc8be');
+      rect(g, x + 1, B - 19, 3, 2, '#b7b0a8');
+    });
     return c;
   }
 
@@ -850,6 +913,7 @@
   // Shared, cached pieces (the mobile walk uses these without the rest)
   const once = (key, make) => cache[key] || (cache[key] = make());
   const skylines = () => once('skylines', () => ({ nyc: skylineNYC(), bos: skylineBOS() }));
+  const scopeSkyline = () => once('nycScope', () => skylineNYC(false));
   const sunArt = () => once('sun', sun);
   const cloudArt = () => once('clouds', () => clouds(17, 5, false));
 
@@ -884,7 +948,7 @@
   }
 
   HA.scenery = {
-    build, sky, layout, backdrops, sprite, rng, cv, skylines, sunArt, cloudArt, ZONES,
+    build, sky, layout, backdrops, sprite, rng, cv, skylines, scopeSkyline, sunArt, cloudArt, ZONES,
     NEAR_TOP, NEAR_BOT, FAR_H, BANK_H, PARALLAX, REF_VIEW
   };
 })();

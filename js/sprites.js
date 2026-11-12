@@ -907,6 +907,94 @@
       g.rect(0, 0, 12, 2, 'X');
       return g.outline();
     },
+    // Coin-operated tourist viewer: a round head with two round eyepieces
+    // set into the top, the coin slot below them, on a post and a base.
+    // lit: the eyepieces and coin plate glow once a coin is in.
+    telescope(lit) {
+      const g = new Px(17, 37);
+      g.rect(5, 33, 7, 1, 't'); // base
+      g.rect(3, 34, 11, 2, 't');
+      g.rect(7, 15, 3, 18, 'z'); // post
+      g.rect(5, 13, 7, 2, 'Z'); // collar
+      g.ellipse(8.5, 7.5, 7, 6.5, 't'); // the round head
+      g.rim();
+      const EYE = ['.ZZZ.', 'ZkkkZ', 'ZkkkZ', 'ZkkkZ', '.ZZZ.'];
+      [2, 10].forEach((ex) => {
+        g.blit(Px.from(EYE), ex, 3);
+        g.set(ex + 3, 4, lit ? 'e' : 'u'); // glint on the glass
+      });
+      g.rect(6, 9, 5, 3, lit ? 'e' : 'y'); // coin plate
+      g.rect(8, 9, 1, 3, 'k'); // slot
+      g.rect(8, 16, 1, 16, 'X'); // shine on the post
+      return g.outline();
+    },
+    // King Kong, hanging off the Empire State with one hand on the mast.
+    // pose 0: arm down, 1: swiping at a plane, 2: beating his chest
+    kong(pose) {
+      const g = new Px(21, 20), o = 1;
+      g.rect(7, 13 + o, 3, 4, '6'); // legs
+      g.rect(12, 13 + o, 3, 4, '6');
+      g.rect(6, 16 + o, 4, 2, '6');
+      g.rect(12, 16 + o, 4, 2, '6');
+      g.ellipse(11, 10 + o, 5, 4.5, '6'); // body
+      g.ellipse(12, 4.5 + o, 3.5, 3.5, '6'); // head
+      g.line(7, 8 + o, 2, 3 + o, '6', 2); // gripping the mast
+      if (pose === 1) {
+        g.line(15, 8 + o, 18, 2 + o, '6', 2);
+        g.rect(17, 0 + o, 3, 2, '6');
+      } else if (pose !== 2) g.line(15, 8 + o, 17, 13 + o, '6', 2);
+      g.rim();
+      g.rect(10, 4 + o, 5, 3, '7'); // face
+      g.rect(10, 3 + o, 5, 1, '6');
+      g.set(11, 4 + o, 'k').set(13, 4 + o, 'k');
+      g.rect(11, 6 + o, 3, 1, pose === 2 ? 'R' : '5');
+      g.ellipse(11, 11 + o, 2.5, 2, '7'); // chest
+      if (pose === 2) g.line(15, 8 + o, 12, 10 + o, '6', 2);
+      return g.outline();
+    },
+    // Cthulhu, rising out of the river: bat wings, a squid head with glowing
+    // eyes and a beard of face tentacles. f: wing beat / tentacle wiggle frame.
+    // The bottom row sits at the waterline.
+    cthulhu(f) {
+      const g = new Px(42, 46), tip = f ? 6 : 1;
+      g.poly([[17, 18], [3, tip], [1, tip + 12], [5, tip + 9], [7, tip + 16], [11, tip + 12], [16, 26]], '3');
+      g.poly([[25, 18], [39, tip], [41, tip + 12], [37, tip + 9], [35, tip + 16], [31, tip + 12], [26, 26]], '3');
+      g.line(17, 18, 3, tip, 'G').line(16, 20, 7, tip + 15, 'G');
+      g.line(25, 18, 39, tip, 'G').line(26, 20, 35, tip + 15, 'G');
+      g.ellipse(21, 33, 8.5, 13, 'g'); // body
+      g.ellipse(21, 12, 7, 8.5, 'g'); // head
+      g.rim('g');
+      for (let y = 28; y < 45; y += 3) g.rect(19, y, 4, 1, 'G'); // belly
+      g.rect(16, 11, 3, 2, 'y').set(16, 11, 'e'); // eyes
+      g.rect(23, 11, 3, 2, 'y').set(23, 11, 'e');
+      const w = f ? 1 : -1;
+      [17, 19, 21, 23, 25].forEach((x, i) => {
+        const s = i % 2 ? w : -w;
+        g.line(x, 16, x + s, 21, 'G').line(x + s, 21, x, 24, 'G');
+      });
+      return g.outline();
+    },
+    // A little 1930s biplane, facing right; f flips the propeller blur
+    biplane(f) {
+      const g = new Px(14, 8);
+      g.rect(1, 2, 2, 2, 'x'); // tail fin
+      g.rect(1, 4, 10, 2, 'x'); // fuselage
+      g.rect(4, 1, 6, 1, 'c'); // upper wing
+      g.rect(4, 6, 6, 1, 'c'); // lower wing
+      g.rim();
+      g.set(5, 2, 'z').set(8, 2, 'z').set(5, 3, 'z').set(8, 3, 'z'); // struts
+      g.set(7, 3, 'M'); // the pilot
+      g.rect(11, 4, 1, 2, 'z');
+      g.rect(12, f ? 1 : 3, 1, f ? 6 : 2, 'k'); // propeller
+      return g.outline();
+    },
+    coin() {
+      const g = new Px(3, 3);
+      g.rect(0, 0, 3, 3, 'y');
+      g.set(0, 0, '.').set(2, 0, '.').set(0, 2, '.').set(2, 2, '.');
+      g.set(1, 1, 'e');
+      return g;
+    },
     railNY() {
       const g = new Px(16, 22);
       g.rect(0, 0, 16, 2, 'k');

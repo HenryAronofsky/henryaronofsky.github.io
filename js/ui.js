@@ -53,7 +53,7 @@
       const run = e.target.closest('[data-run]');
       if (run) {
         e.preventDefault();
-        handlers.onGo(run.dataset.run);
+        handlers.onGo(run.dataset.run, true); // walk there, then open it
         shut(run);
         return;
       }
@@ -163,11 +163,11 @@
         (stop.subtitle ? `<p class="sub">${esc(stop.subtitle)}</p>` : '') +
         meta(stop, 'p') +
         (stop.highlight ? `<p class="hl">${esc(stop.highlight)}</p>` : '') +
-        `<p class="cta"><span class="cta-key">Press <kbd>E</kbd> to expand</span><span class="cta-tap">Tap to expand</span></p>` +
+        `<p class="cta"><span class="cta-key">Press <kbd>E</kbd> to ${esc(stop.cta || 'expand')}</span><span class="cta-tap">Tap to ${esc(stop.cta || 'expand')}</span></p>` +
         `</div>`;
       this.el.classList.remove('is-out');
       this.el.classList.add('is-in');
-      announce(`${stop.title}${stop.subtitle ? ', ' + stop.subtitle : ''}. Press E to expand.`);
+      announce(`${stop.title}${stop.subtitle ? ', ' + stop.subtitle : ''}. Press E to ${stop.cta || 'expand'}.`);
     },
     place(x, y) {
       const w = this.el.offsetWidth, vw = window.innerWidth;
@@ -198,7 +198,7 @@
         if (rel) {
           const to = rel.dataset.to;
           this.close();
-          handlers.onGo(to);
+          handlers.onGo(to, true); // walk there, then open it
           return;
         }
         const zoom = e.target.closest('[data-zoom]');

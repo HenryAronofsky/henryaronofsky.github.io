@@ -119,7 +119,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: clamp(10px, 1.6vw - 2px, 16px);
   height: 52px;
   padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
   background: var(--paper);
@@ -147,13 +147,13 @@ kbd {
   display: grid;
   justify-items: center;
   gap: 3px;
-  padding: 6px 10px 5px;
+  padding: 6px clamp(5px, 0.9vw - 1px, 10px) 5px;
   background: none;
   border: 0;
   cursor: pointer;
   font-family: var(--font-tiny);
   font-size: 12px;
-  letter-spacing: 0.04em;
+  letter-spacing: clamp(0px, 0.1vw - 0.8px, 0.48px);
   text-transform: uppercase;
   color: var(--ink-soft);
   transition: color 0.12s, background-color 0.12s;
@@ -285,7 +285,12 @@ html.menu-open .hud { z-index: 40; }
   text-align: left;
   box-shadow: -3px 0 0 var(--line), 3px 0 0 var(--line), 0 -3px 0 var(--line), 0 3px 0 var(--line), 0 7px 0 var(--line);
 }
-.menu-link:active { transform: translateY(3px); }
+.menu-link:active { transform: translateY(3px); background: var(--sun-soft); }
+@media (hover: hover) {
+  .menu-link:hover { background: var(--sun-soft); }
+}
+.menu-link:focus-visible { background: var(--sun-soft); }
+.menu-link { transition: background 0.12s; }
 .menu-icon { width: 40px; height: 40px; flex: none; }
 html.menu-open { overflow: hidden; }
 body.mode-side .menu { display: none; }
@@ -360,7 +365,7 @@ body.mode-side { overflow: hidden; height: 100vh; height: 100dvh; }
 .controls-card {
   width: 300px;
   padding: 12px 14px 12px;
-  transform-origin: 100% 100%;
+  transform-origin: 50% 100%;
 }
 .controls-card { background: var(--paper); }
 .controls-card {
@@ -469,6 +474,37 @@ body.mode-side { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .bubble .cta kbd { margin: 0 3px; animation: nudge 1.4s infinite; }
 .cta-tap { display: none; }
+
+/* binocular view through the tourist viewer */
+.scope-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 10px 16px 8px;
+  font-family: var(--font-tiny);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e9e3f2;
+  white-space: nowrap;
+  background: #1b1626;
+  box-shadow: -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000;
+  pointer-events: none;
+  animation: rise 0.4s 0.25s both cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.scope-hint kbd { margin-right: 2px; }
+.scope-time { color: var(--sun); font-size: 13px; }
+.scope-time.is-low { color: #ff7a6a; animation: blink 0.8s steps(2) infinite; }
+body.is-scoping .title-card,
+body.is-scoping .controls,
+body.is-scoping .bubble { opacity: 0 !important; pointer-events: none !important; transition: opacity 0.25s; }
+@media (max-width: 1080px) {
+  .scope-hint span:nth-child(2) { display: none; }
+}
 
 /* ----------------------------------------------------------- the dock */
 .dock {
@@ -801,9 +837,8 @@ body.mode-vertical .cta-key, body.mode-vertical .panel-hint { display: none; }
   margin: 0;
   padding: 4svh 0 48svh;
   text-align: center;
-  font-family: var(--font-tiny);
-  font-size: 12px;
 }
+.w-barrier { display: inline-block; max-width: 90%; height: auto; } /* drawn at the scene's pixel size */
 
 @media (max-width: 760px) {
   .dock-in { min-height: 54px; gap: 6px 14px; }
@@ -815,9 +850,6 @@ body.mode-vertical .cta-key, body.mode-vertical .panel-hint { display: none; }
   .panel-head { gap: 12px; }
   .panel-icon { width: 56px; height: 56px; }
   .gallery { --row: 130px; --max-h: 420px; gap: 14px; }
-}
-@media (max-width: 1080px) {
-  body.mode-side .hud-brand span { display: none; }
 }
 
 /* ---------------------------------------------------------- motion */
