@@ -651,8 +651,7 @@
         } else ui.bubble.hide();
       }
       if (active) {
-        const top = active.landmark === 'gate' ? G - 72 : G - 50;
-        ui.bubble.place((active.x - cam.x) * S, top * S);
+        ui.bubble.place((active.x - cam.x) * S, (G - 50) * S);
       }
       // header chapter
       let ch = L.chapters[0];
