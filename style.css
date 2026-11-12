@@ -580,24 +580,24 @@ body.mode-side { overflow: hidden; height: 100vh; height: 100dvh; }
 .bullets { margin: 0 0 22px; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 70ch; }
 .bullets li { position: relative; padding-left: 22px; }
 .bullets li::before { content: ''; position: absolute; left: 2px; top: 9px; width: 8px; height: 8px; background: var(--brick); box-shadow: 2px 2px 0 rgba(36, 28, 53, 0.25); }
-.gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 18px; margin: 4px 0 26px; }
-.gallery .video, .gallery .tall { grid-row: span 2; }
-.gallery figure { margin: 0; }
-.gallery .wide { grid-column: 1 / -1; }
+/* Justified rows: every frame takes its image's own shape (--r = width / height,
+   set when the image loads), so the border hugs the photo with no letterboxing,
+   and pictures that share a row share a height. */
+.gallery { --row: 220px; --max-h: 460px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px; margin: 4px 0 26px; }
+.gallery figure { --r: 4 / 3; margin: 0; flex: var(--r) 1 calc(var(--r) * var(--row)); max-width: calc(var(--r) * var(--max-h)); min-width: 0; }
+.gallery .tall { --r: 3 / 4; }
+.gallery .video { --r: 9 / 14; }
+.gallery .wide { flex-basis: 100%; }
 .gallery .frame {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--r);
   background: #ece4d1;
   overflow: hidden;
   box-shadow: -3px 0 0 var(--line), 3px 0 0 var(--line), 0 -3px 0 var(--line), 0 3px 0 var(--line);
 }
-.gallery .tall .frame { aspect-ratio: 3 / 4; }
-.gallery .video .frame { aspect-ratio: 9 / 14; background: #1d1a28; }
-.gallery .wide .frame { aspect-ratio: auto; }
-.gallery img, .gallery video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.gallery .video .frame { background: #1d1a28; }
+.gallery img, .gallery video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery video { object-fit: contain; }
 .gallery img { cursor: zoom-in; }
-.gallery .wide img { height: auto; }
 .gallery figcaption { margin-top: 10px; font-family: var(--font-tiny); font-size: 11px; color: var(--ink-soft); }
 .panel-sec { margin: 0 0 20px; max-width: 70ch; }
 .panel-sec h3, .related h3 { margin: 0 0 6px; font-family: var(--font-pixel); font-weight: 700; font-size: 21px; }
@@ -814,7 +814,7 @@ body.mode-vertical .cta-key, body.mode-vertical .panel-hint { display: none; }
   .panel-body { padding-top: 22px; }
   .panel-head { gap: 12px; }
   .panel-icon { width: 56px; height: 56px; }
-  .gallery { grid-template-columns: 1fr; }
+  .gallery { --row: 130px; --max-h: 420px; gap: 14px; }
 }
 @media (max-width: 1080px) {
   body.mode-side .hud-brand span { display: none; }

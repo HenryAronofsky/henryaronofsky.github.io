@@ -281,7 +281,8 @@
         h += `<figure class="${cls}"><div class="frame">`;
         if (m.type === 'video')
           h += `<video src="${esc(m.src)}" poster="${esc(m.poster || '')}" controls playsinline preload="none"></video>`;
-        else h += `<img src="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" data-zoom>`;
+        else
+          h += `<img src="${esc(m.src)}" alt="${esc(m.alt || '')}" loading="lazy" data-zoom onload="this.closest('figure').style.setProperty('--r', this.naturalWidth / this.naturalHeight)">`;
         h += `</div>${m.caption ? `<figcaption>${esc(m.caption)}</figcaption>` : ''}</figure>`;
       });
       h += `</div>`;

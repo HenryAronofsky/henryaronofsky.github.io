@@ -230,23 +230,6 @@ HA.content = {
       links: [{ label: 'Download full report (PDF)', href: 'portfolio/es51/Report.pdf' }]
     },
     {
-      id: 'classic-cars',
-      tag: 'Summer work',
-      chapter: 'portfolio',
-      icon: 'car',
-      kicker: 'Summer Work',
-      title: 'Classic Car Maintenance',
-      subtitle: 'A 1951 Pontiac, a 1972 Ford and a 1979 Jaguar',
-      highlight: 'Carburetors, coolant hoses and electrical systems',
-      summary: 'Summers spent keeping three classic cars on the road — a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.',
-      bullets: ['Rebuild carburetors, replace coolant hoses and redesign electrical systems on a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.'],
-      media: [
-        { type: 'image', src: 'portfolio/cars/refitted-v8-engine.jpg', alt: 'Refitted V8 engine', caption: 'Refitted engine', tall: true },
-        { type: 'image', src: 'portfolio/cars/rebuilding-the-carburetor.jpg', alt: 'Working on the carburetor on top of the V8', caption: 'Rebuilding the carburetor', tall: true },
-        { type: 'image', src: 'portfolio/cars/replacing-coolant-hoses.jpg', alt: 'Reaching under the hood to replace a coolant hose', caption: 'Replacing coolant hoses', tall: true }
-      ]
-    },
-    {
       id: 'jellyfish',
       tag: 'Lab research rig',
       chapter: 'portfolio',
@@ -270,6 +253,23 @@ HA.content = {
         }
       ],
       related: [{ label: 'Harvard Microrobotics Laboratory', note: 'Where this lives', to: 'microrobotics' }]
+    },
+    {
+      id: 'classic-cars',
+      tag: 'Summer work',
+      chapter: 'portfolio',
+      icon: 'car',
+      kicker: 'Summer Work',
+      title: 'Classic Car Maintenance',
+      subtitle: 'A 1951 Pontiac, a 1972 Ford and a 1979 Jaguar',
+      highlight: 'Carburetors, coolant hoses and electrical systems',
+      summary: 'Summers spent keeping three classic cars on the road — a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.',
+      bullets: ['Rebuild carburetors, replace coolant hoses and redesign electrical systems on a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.'],
+      media: [
+        { type: 'image', src: 'portfolio/cars/refitted-v8-engine.jpg', alt: 'Refitted V8 engine', caption: 'Refitted engine', tall: true },
+        { type: 'image', src: 'portfolio/cars/rebuilding-the-carburetor.jpg', alt: 'Working on the carburetor on top of the V8', caption: 'Rebuilding the carburetor', tall: true },
+        { type: 'image', src: 'portfolio/cars/replacing-coolant-hoses.jpg', alt: 'Reaching under the hood to replace a coolant hose', caption: 'Replacing coolant hoses', tall: true }
+      ]
     },
     {
       id: 'double-bass',
@@ -304,17 +304,16 @@ HA.content = {
       kicker: 'Side project',
       title: 'Plumbing & Construction',
       subtitle: 'Pipe fitting, plumbing, and general construction work',
-      highlight: 'Drain lines, hose fittings and fence stakes',
+      highlight: 'Drain lines and fence stakes',
       summary: 'Hands-on plumbing and construction work — cutting and fitting pipe, running a drain line, and building with basic hand tools.',
       media: [
-        { type: 'image', src: 'portfolio/plumbing-and-construction/connecting-a-washer-hose.jpg', alt: 'Connecting the hose behind a washing machine', caption: 'Connecting a washing machine hose', tall: true },
         { type: 'image', src: 'portfolio/plumbing-and-construction/cutting-drain-pipe.jpg', alt: 'Cutting a length of black drain pipe with a hacksaw', caption: 'Cutting drain pipe to fit', tall: true },
         { type: 'image', src: 'portfolio/plumbing-and-construction/driving-fence-stakes.jpg', alt: 'Driving a wooden fence stake into the ground with a sledgehammer', caption: 'Driving stakes for a fence', tall: true }
       ],
       sections: [
         {
           heading: 'Overview',
-          text: ['General plumbing and construction work around the house — cutting and fitting drain pipe, connecting a washing machine hose, and framing with wooden stakes.']
+          text: ['General plumbing and construction work around the house — cutting and fitting drain pipe and driving wooden stakes for a fence.']
         }
       ]
     },
@@ -380,15 +379,6 @@ HA.content = {
         ['Role', 'Summer Camp Counselor'],
         ['Years', 'Jan 2018 – Jul 2023']
       ]
-    },
-    {
-      id: 'board-games',
-      tag: 'Strategy',
-      chapter: 'interests',
-      icon: 'games',
-      kicker: 'Interest',
-      title: 'Board Games',
-      subtitle: 'Strategy around a table'
     },
 
     {
