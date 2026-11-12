@@ -198,7 +198,7 @@ HA.content = {
       icon: 'robot',
       kicker: 'Class Project · ES51 · Team of 5',
       title: 'BumbleBee',
-      subtitle: '4WD, gearbox and servo actuated competition robot',
+      subtitle: '4WD competition robot built from various materials',
       highlight: 'Two full rounds, zero technical failures',
       summary:
         'A competition robot designed and built with a team of five ("The Hasanov Syndicate") for Harvard ES51\'s Turf Wars competition — a scoring arena that rewarded climbing ramps, collecting and storing objects, and a stacking challenge, all inside an 11"×11"×11" size limit.',
@@ -236,16 +236,15 @@ HA.content = {
       chapter: 'portfolio',
       icon: 'jelly',
       kicker: 'Harvard Microrobotics Laboratory · Ongoing',
-      title: 'Jellyfish Motion Rig',
-      subtitle: 'Stepper-driven rig for jellyfish research',
-      highlight: 'Arduino Mega + DM542T stepper driver',
+      title: 'Ocean Shot',
+      subtitle: 'Deep see biopsy sampler',
+      highlight: 'Electromagnetic powered extractor tested and verified with in house rig',
       summary:
         'A stepper-motor-driven rig built to observe and record jellyfish movement, part of ongoing research at the Harvard Microrobotics Laboratory into ocean exploration and bio-data recovery tools.',
       media: [
         { type: 'image', src: 'portfolio/wood-lab/jellyfish-in-the-tank.jpg', alt: 'Jellyfish swimming in a round, green-lit observation tank', caption: 'Jellyfish in the observation tank' },
         { type: 'image', src: 'portfolio/wood-lab/gantry-rig-setup.jpg', alt: 'Aluminium gantry with stepper motors mounted over a glass tank', caption: 'The gantry rig over the tank', tall: true },
         { type: 'image', src: 'portfolio/wood-lab/camera-and-gantry.jpg', alt: 'Camera on a tripod filming the tank under the gantry, shaded with a cloth', caption: 'Setting up the camera to film the tank', tall: true },
-        { type: 'image', src: 'portfolio/wood-lab/stepper-driver.jpg', alt: 'Stepper motor and driver controlled by an Arduino Mega', caption: 'Stepper driver and control electronics', tall: true }
       ],
       sections: [
         {
@@ -265,7 +264,7 @@ HA.content = {
       subtitle: 'A 1951 Pontiac, a 1972 Ford and a 1979 Jaguar',
       highlight: 'Carburetors, coolant hoses and electrical systems',
       summary: 'Summers spent keeping three classic cars on the road — a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.',
-      bullets: ['Rebuild carburetors, replace coolant hoses and redesign electrical systems on a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.'],
+      bullets: ['Rebuild carburetors, replace coolant hoses, and redesign electrical systems on a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.'],
       media: [
         { type: 'image', src: 'portfolio/cars/refitted-v8-engine.jpg', alt: 'Refitted V8 engine', caption: 'Refitted engine', tall: true },
         { type: 'image', src: 'portfolio/cars/rebuilding-the-carburetor.jpg', alt: 'Working on the carburetor on top of the V8', caption: 'Rebuilding the carburetor', tall: true },
@@ -280,7 +279,7 @@ HA.content = {
       kicker: 'Side project',
       title: 'Scratch-Built Double Bass',
       subtitle: 'A four-string upright bass built from reclaimed lumber',
-      highlight: 'Carved by hand from raw lumber',
+      highlight: 'Constructed by hand from raw lumber',
       summary:
         'A four-string upright bass built from scratch out of reclaimed lumber — neck, pegbox, and body carved and assembled by hand, strung and tuned to play.',
       media: [
@@ -351,7 +350,7 @@ HA.content = {
       title: 'Jazz Performance',
       subtitle: 'Double Bassist · Harvard Jazz Orchestra',
       dates: 'Sep 2026 – Present',
-      highlight: 'Upright bass — the thing the arrangement stands on',
+      highlight: 'Upright bass and deep jazz study',
       summary:
         'I play upright bass in jazz settings — combo playing, standards, and the walking bass lines that hold a tune together while everyone else takes a turn out front. The bass is a structural job more than a melodic one, which is probably why it suits me: you are the thing the rest of the arrangement stands on.',
       sections: [
@@ -377,12 +376,15 @@ HA.content = {
       kicker: 'Interest',
       title: 'Sailing',
       subtitle: 'Summers on the water',
-      highlight: 'Counselor at Tivoli Sailing Company, 2018 – 2023',
-      facts: [
-        ['Camp', 'Tivoli Sailing Company'],
-        ['Role', 'Summer Camp Counselor'],
-        ['Years', 'Jan 2018 – Jul 2023']
-      ]
+      dates: 'Summers Jan 2018 – Jul 2023',
+      highlight: 'Camp Counselor at Tivoli Sailing Company',
+      sections: [
+        {
+          text: [
+            'I taught kids aged 5-14 how to rig boats, sail 20 foot sloops, and tactically win icecream fights.'
+          ]
+        }
+      ],
     },
 
     {
@@ -393,7 +395,6 @@ HA.content = {
       kicker: 'Thanks for walking by',
       title: "Let's talk",
       subtitle: 'Email, LinkedIn, GitHub — or grab my résumé',
-      highlight: 'henryaronofsky@gmail.com',
       contact: true
     }
   ]
