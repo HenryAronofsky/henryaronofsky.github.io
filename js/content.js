@@ -336,6 +336,9 @@ HA.content = {
           ]
         }
       ],
+      media: [
+        { type: 'image', src: 'interests/theater/brabantio.png', alt: 'In costume on stage', caption: 'Playing Brabantio in HRDC\'s production of Othello', tall: true }
+      ],
       related: [{ label: 'Harvard-Radcliffe Dramatic Club', note: 'Sound engineer and designer', to: 'hrdc' }]
     },
     {
