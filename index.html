@@ -28,7 +28,17 @@
     <span>Henry Aronofsky</span>
   </a>
   <nav class="hud-nav" id="hud-nav" aria-label="Run to a section"></nav>
+  <button class="hud-burger" id="hud-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+    <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+  </button>
 </header>
+
+<div class="menu" id="menu" hidden>
+  <nav class="menu-nav" aria-label="Sections">
+    <p class="kicker">Run to</p>
+    <ul id="menu-list"></ul>
+  </nav>
+</div>
 
 <div class="stage" id="stage" hidden>
   <canvas id="world" role="img" aria-label="A pixel-art walk from Brooklyn to Cambridge past each part of Henry's résumé"></canvas>
@@ -38,7 +48,7 @@
     <h1>Henry Aronofsky</h1>
     <p class="role">Student at Harvard University</p>
     <ul class="chips">
-      <li>Cambridge, MA</li>
+      <li>Boston, MA</li>
       <li>Mechanical Engineering</li>
       <li class="chip-go">Open to opportunities</li>
     </ul>
@@ -48,13 +58,16 @@
     <div class="controls-card">
       <p class="kicker">How to play</p>
       <ul>
-        <li data-act="walk"><span class="keys"><kbd data-key="KeyA">A</kbd><kbd data-key="KeyD">D</kbd><em>or</em><kbd data-key="ArrowLeft">←</kbd><kbd data-key="ArrowRight">→</kbd></span><b>Walk</b></li>
-        <li data-act="jump"><span class="keys"><kbd data-key="KeyW">W</kbd><kbd class="wide" data-key="Space">Space</kbd><kbd data-key="ArrowUp">↑</kbd></span><b>Jump</b></li>
-        <li data-act="squat"><span class="keys"><kbd data-key="KeyS">S</kbd><kbd data-key="ArrowDown">↓</kbd></span><b>Squat</b></li>
-        <li data-act="open"><span class="keys"><kbd data-key="KeyE">E</kbd></span><b>Expand info</b></li>
-        <li data-act="run"><span class="keys"><kbd class="wide" data-key="ShiftLeft ShiftRight">Shift</kbd></span><b>Run</b></li>
+        <li data-act="move">
+          <span class="keys">
+            <span class="cluster"><kbd class="up" data-key="KeyW">W</kbd><kbd data-key="KeyA">A</kbd><kbd data-key="KeyS">S</kbd><kbd data-key="KeyD">D</kbd></span>
+            <em>or</em>
+            <span class="cluster"><kbd class="up" data-key="ArrowUp">↑</kbd><kbd data-key="ArrowLeft">←</kbd><kbd data-key="ArrowDown">↓</kbd><kbd data-key="ArrowRight">→</kbd></span>
+          </span>
+          <b>Move</b>
+        </li>
+        <li data-act="run"><span class="keys"><kbd class="wide" data-key="ShiftLeft ShiftRight">Shift</kbd></span><b>Sprint</b></li>
       </ul>
-      <p class="hint">Or pick a section up top to run straight there.</p>
     </div>
   </div>
 
@@ -70,7 +83,6 @@
       <a id="dock-email" href="mailto:henryaronofsky@gmail.com"><span class="long">henryaronofsky@gmail.com</span><span class="short">Email</span></a>
       <a href="https://www.linkedin.com/in/haronofsky/" target="_blank" rel="noopener">LinkedIn</a>
       <a href="https://github.com/HenryAronofsky/" target="_blank" rel="noopener">GitHub</a>
-      <a class="dock-site" href="https://henryaronofsky.github.io/">henryaronofsky.github.io</a>
     </nav>
     <a class="btn btn-primary dock-cv" href="Henry_Aronofsky_Resume.pdf" download><span aria-hidden="true">⤓</span> Résumé<span class="long"> (PDF)</span></a>
   </div>
@@ -97,6 +109,7 @@
 <script src="js/content.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/scenery.js"></script>
+<script src="js/backdrops.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/side.js"></script>
 <script src="js/vertical.js"></script>

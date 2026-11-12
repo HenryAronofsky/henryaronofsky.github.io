@@ -1,6 +1,7 @@
 /* Interface pieces shared by the side-scroller and the mobile walk:
-   header navigation, the pop-up bubble, the expanded panel, the contact dock,
-   the controls guide and a screen-reader list of every stop. */
+   header navigation (drop-downs on desktop, a full-screen menu on phones),
+   the pop-up bubble, the expanded panel, the contact dock, the controls
+   guide and a screen-reader list of every stop. */
 (function () {
   'use strict';
   const HA = (window.HA = window.HA || {});
@@ -31,24 +32,97 @@
 
   /* -------------------------------------------------------------- header */
   function buildHeader() {
-    const nav = $('#hud-nav');
+    const nav = $('#hud-nav'), n = content.chapters.length;
     nav.innerHTML = content.chapters
-      .map((c) => {
-        const pips = (chapterStops[c.id] || [])
-          .map((s) => `<i data-pip="${esc(s.id)}"${visited.has(s.id) ? ' class="on"' : ''}></i>`)
-          .join('');
-        return `<button type="button" class="hud-link" data-go="${esc(c.id)}"><span>${esc(c.label)}</span><span class="pips" aria-hidden="true">${pips}</span></button>`;
+      .map((c, i) => {
+        const stops = chapterStops[c.id] || [];
+        const pips = stops.map((s) => `<i data-pip="${esc(s.id)}"${visited.has(s.id) ? ' class="on"' : ''}></i>`).join('');
+        // hovering a section lists its stops so you can run straight to one
+        const drop = stops.length
+          ? `<div class="hud-drop${i >= n - 2 ? ' end' : ''}">` +
+            stops
+              .map((s) => `<button type="button" class="drop-item" data-run="${esc(s.id)}">${icon(s.icon, 2, 'drop-icon')}<span><b>${esc(s.title)}</b><small>${esc(s.tag || s.subtitle || '')}</small></span></button>`)
+              .join('') +
+            `</div>`
+          : '';
+        return `<div class="hud-item"><button type="button" class="hud-link" data-go="${esc(c.id)}"><span>${esc(c.label)}</span><span class="pips" aria-hidden="true">${pips}</span></button>${drop}</div>`;
       })
       .join('');
     $('#hud-logo').src = HA.pix.iconURL('logo', 1);
     document.addEventListener('click', (e) => {
+      const run = e.target.closest('[data-run]');
+      if (run) {
+        e.preventDefault();
+        handlers.onGo(run.dataset.run);
+        shut(run);
+        return;
+      }
       const b = e.target.closest('[data-go]');
       if (!b) return;
       e.preventDefault();
       handlers.onNav(b.dataset.go, e.detail > 0);
-      if (e.detail > 0) b.blur();
+      if (e.detail > 0) shut(b);
     });
   }
+  // after a pick, tuck the drop-down away until the pointer leaves it
+  function shut(el) {
+    el.blur();
+    const item = el.closest('.hud-item');
+    if (!item) return;
+    item.classList.add('is-shut');
+    item.addEventListener('mouseleave', () => item.classList.remove('is-shut'), { once: true });
+  }
+
+  /* --------------------------------------------- phone menu (full screen) */
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const menu = {
+    isOpen: false,
+    init() {
+      this.el = $('#menu');
+      this.btn = $('#hud-burger');
+      $('#menu-list').innerHTML = content.chapters
+        .map((c) => {
+          const first = (chapterStops[c.id] || [])[0];
+          const art = first ? icon(first.icon, 2, 'menu-icon') : `<img class="px menu-icon" src="${HA.pix.iconURL('logo', 2)}" alt="" width="64" height="64">`;
+          return `<li><button type="button" class="menu-link" data-menu-go="${esc(c.id)}">${art}<span>${esc(c.label)}</span></button></li>`;
+        })
+        .join('');
+      this.btn.addEventListener('click', () => (this.isOpen ? this.close() : this.open()));
+      this.el.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-menu-go]');
+        if (b) this.close(() => handlers.onNav(b.dataset.menuGo, true));
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen) this.close();
+      });
+    },
+    open() {
+      if (this.isOpen) return;
+      this.isOpen = true;
+      clearTimeout(this.timer);
+      this.el.hidden = false;
+      document.documentElement.classList.add('menu-open');
+      this.btn.setAttribute('aria-expanded', 'true');
+      this.btn.setAttribute('aria-label', 'Close menu');
+      void this.el.offsetWidth; // start the fade from transparent
+      this.el.classList.add('is-open');
+      const f = this.el.querySelector('.menu-link');
+      if (f) f.focus({ preventScroll: true });
+    },
+    close(then) {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      this.el.classList.remove('is-open');
+      this.btn.setAttribute('aria-expanded', 'false');
+      this.btn.setAttribute('aria-label', 'Open menu');
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => {
+        this.el.hidden = true;
+        document.documentElement.classList.remove('menu-open');
+        if (then) then();
+      }, RM.matches ? 0 : 200);
+    }
+  };
 
   function setChapter(id) {
     const nav = $('#hud-nav');
@@ -97,6 +171,7 @@
     },
     place(x, y) {
       const w = this.el.offsetWidth, vw = window.innerWidth;
+      y = Math.max(y, this.el.offsetHeight + 66);
       const left = Math.max(12, Math.min(vw - w - 12, x - w / 2));
       this.el.style.transform = `translate(${Math.round(left)}px, ${Math.round(y)}px) translateY(-100%)`;
       this.el.style.setProperty('--tail', `${Math.round(Math.max(18, Math.min(w - 18, x - left)))}px`);
@@ -223,12 +298,13 @@
         <li><span>Email</span><a href="mailto:${esc(p.email)}">${esc(p.email)}</a></li>
         <li><span>LinkedIn</span><a href="${esc(p.linkedin)}" target="_blank" rel="noopener">linkedin.com/in/haronofsky</a></li>
         <li><span>GitHub</span><a href="${esc(p.github)}" target="_blank" rel="noopener">github.com/HenryAronofsky</a></li>
-        <li><span>Website</span><a href="${esc(p.website)}">henryaronofsky.github.io</a></li>
       </ul>
       <p class="links"><a class="btn btn-primary" href="${esc(p.resume)}" download>Download résumé (PDF)</a></p>`;
     }
     if (s.links)
       h += `<p class="links">${s.links.map((l) => `<a class="btn" href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('')}</p>`;
+    const hasBody = ['summary', 'facts', 'bullets', 'media', 'sections', 'tags', 'contact', 'links', 'related'].some((k) => s[k]);
+    if (!hasBody) h += `<p class="lead soon">More about this soon.</p>`;
     if (s.related) {
       h += `<div class="related"><h3>Walk to</h3><div class="related-list">`;
       h += s.related
@@ -290,6 +366,7 @@
     handlers = h;
     content.stops.forEach((s) => (chapterStops[s.chapter] = chapterStops[s.chapter] || []).push(s));
     buildHeader();
+    menu.init();
     bubble.init();
     panel.init();
     controls.init();
@@ -298,9 +375,10 @@
   }
 
   HA.ui = {
-    init, esc, icon, meta, setChapter, setVisited, visited, bubble, panel, controls, announce, store,
-    dock(show) {
-      document.body.classList.toggle('dock-on', !!show);
+    init, esc, icon, meta, setChapter, setVisited, visited, bubble, panel, controls, menu, announce, store,
+    // the header and the contact dock come and go together
+    chrome(show) {
+      document.body.classList.toggle('chrome-on', !!show);
     }
   };
 })();

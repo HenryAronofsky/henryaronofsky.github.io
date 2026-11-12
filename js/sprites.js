@@ -23,7 +23,8 @@
     4: '#93e6dc', t: '#3fbfb2', T: '#278a86',
     i: '#f6a8c1', I: '#d9708f', p: '#a57ad8', P: '#7350a6',
     f: '#ecc993', F: '#c99c5e', m: '#b6784a', M: '#7d5131',
-    n: '#8e94a0', N: '#6e7480', q: '#4f5460'
+    n: '#8e94a0', N: '#6e7480', q: '#4f5460',
+    5: '#8b5a47', 6: '#6a3f32', 7: '#a9765f', 8: '#3b4458', 9: '#7ff3ff'
   };
 
   // Lighter / darker neighbour of each colour, for automatic rim shading
@@ -40,7 +41,8 @@
     4: ['w', 't'], t: ['4', 'T'], T: ['t', 'V'],
     i: ['C', 'I'], I: ['i', 'P'], p: ['i', 'P'], P: ['p', 'V'],
     f: ['C', 'F'], F: ['f', 'M'], m: ['f', 'M'], M: ['m', 'H'],
-    n: ['x', 'N'], N: ['n', 'q'], q: ['N', 'k']
+    n: ['x', 'N'], N: ['n', 'q'], q: ['N', 'k'],
+    5: ['7', '6'], 6: ['5', 'H'], 7: ['f', '5'], 8: ['z', 'k'], 9: ['w', 't']
   };
 
   /* --------------------------------------------------------- pixel grid */
@@ -389,7 +391,9 @@
       jump: sidePose({ nf: [15, 27], ns: 'flat', ff: [9, 31], fs: 'heel', nh: [17, 13], fh: [5, 17] }),
       fall: sidePose({ nf: [15, 29], ff: [9, 30], fs: 'heel', nh: [18, 11], fh: [5, 11] }),
       squat: sidePose({ dy: 5, nf: [15, ANKLE], ff: [10, ANKLE], nh: [16, 25], fh: [12, 26] }),
-      land: sidePose({ dy: 2, nf: [14, ANKLE], ff: [10, ANKLE], nh: [13, 23], fh: [9, 23] })
+      land: sidePose({ dy: 2, nf: [14, ANKLE], ff: [10, ANKLE], nh: [13, 23], fh: [9, 23] }),
+      // tossing crumbs: reach into a pocket, then throw
+      toss: [sidePose(Object.assign({ nh: [9, 22] }, stand)), sidePose(Object.assign({ nh: [18, 14] }, stand))]
     };
     for (let i = 0; i < 8; i++) {
       side.walk.push(sidePose(gait(i / 8, { stride: 3, lift: 2, swing: 2.5, bob: 1, lean: 0 })));
@@ -756,6 +760,39 @@
     }
   };
 
+  Object.assign(ICONS, {
+    speaker(g) {
+      g.rect(3, 1, 15, 21, 'Z');
+      g.rect(4, 22, 3, 2, 'k');
+      g.rect(14, 22, 3, 2, 'k');
+      g.rim();
+      g.ellipse(10.5, 14.5, 5.6, 5.6, 'k');
+      g.ellipse(10.5, 14.5, 4.2, 4.2, 'z');
+      g.ellipse(10.5, 14.5, 1.8, 1.8, 'X');
+      g.ellipse(10.5, 5.5, 2.4, 2.4, 'k');
+      g.set(10, 5, 'X');
+      g.set(15, 2, 'g');
+      return (h) => {
+        [[19, 10, 15], [21, 8, 17]].forEach(([x, y0, y1]) => {
+          h.set(x, y0, 'b');
+          for (let y = y0 + 1; y < y1; y++) h.set(x + 1, y, 'b');
+          h.set(x, y1, 'b');
+        });
+      };
+    },
+    games(g) {
+      g.poly([[1, 9], [8, 6], [15, 9], [8, 12]], 'w');
+      g.poly([[1, 9], [8, 12], [8, 21], [1, 18]], 'W');
+      g.poly([[8, 12], [15, 9], [15, 18], [8, 21]], 'x');
+      g.rect(15, 19, 8, 3, 'r');
+      g.poly([[16, 19], [18, 11], [20, 11], [22, 19]], 'r');
+      g.ellipse(19, 8.5, 2.6, 2.6, 'r');
+      g.rect(17, 11, 4, 1, 'r');
+      g.rim();
+      [[8, 9], [3, 12], [6, 17], [10, 14], [13, 12], [10, 18], [13, 16]].forEach(([x, y]) => g.set(x, y, 'k'));
+    }
+  });
+
   function icon(name) {
     const g = new Px(24, 24);
     const after = ICONS[name](g);
@@ -966,6 +1003,200 @@
         }
       g.rim();
       return g.outline();
+    },
+
+    /* lamps for each part of the walk */
+    lampTech() {
+      const g = new Px(12, 50);
+      g.rect(2, 45, 7, 5, 'x');
+      g.rect(4, 6, 3, 40, 'W');
+      g.rect(4, 4, 8, 3, 'W');
+      g.rim('Wx');
+      g.rect(6, 7, 6, 1, '9');
+      g.rect(5, 14, 1, 24, '9');
+      return g.outline();
+    },
+    lampJunk() {
+      const g = new Px(16, 50);
+      g.line(4, 49, 5, 6, 'M', 3);
+      g.line(5, 6, 13, 5, 'm', 2);
+      g.line(7, 12, 5, 9, 'm');
+      g.rim('mM');
+      g.rect(12, 7, 1, 3, 'k');
+      g.rect(10, 10, 5, 8, 'k');
+      g.rect(11, 11, 3, 6, 'e');
+      [[4, 20], [5, 33], [6, 6], [11, 5]].forEach(([x, y]) => g.set(x, y, 'k'));
+      return g.outline();
+    },
+    lampMarble() {
+      const g = new Px(12, 50);
+      g.rect(0, 44, 12, 6, 'W');
+      g.rect(1, 41, 10, 3, 'W');
+      g.rect(3, 15, 6, 26, 'W');
+      g.rect(1, 12, 10, 3, 'W');
+      g.rect(2, 9, 8, 3, 'Y');
+      g.ellipse(6, 6, 3.6, 3.6, 'e');
+      g.rim('WYe');
+      [4, 6].forEach((x) => g.rect(x, 16, 1, 24, 'x'));
+      return g.outline();
+    },
+    cypress() {
+      const g = new Px(14, 46);
+      g.rect(6, 38, 2, 8, 'M');
+      g.ellipse(7, 21, 5.5, 19, 'G');
+      g.rim();
+      for (let i = 0; i < 30; i++) {
+        const x = 2 + ((i * 7) % 10), y = 4 + ((i * 11) % 34);
+        if (g.get(x, y) === 'G') g.set(x, y, i % 2 ? '3' : 'g');
+      }
+      return g.outline();
+    },
+
+    /* boats for each stretch of water */
+    hydrofoil() {
+      const g = new Px(28, 13);
+      g.line(7, 7, 6, 12, 'Z');
+      g.line(20, 7, 21, 12, 'Z');
+      g.rect(3, 12, 6, 1, 'Z');
+      g.rect(18, 12, 6, 1, 'Z');
+      g.poly([[0, 3], [23, 3], [27.5, 6], [3, 8]], 'W');
+      g.rect(8, 0, 10, 3, 'W');
+      g.rim('W');
+      g.rect(15, 1, 3, 2, 'u');
+      for (let x = 4; x < 21; x += 3) g.rect(x, 4, 2, 1, 'b');
+      g.rect(2, 6, 21, 1, '9');
+      return g.outline();
+    },
+    sub() {
+      const g = new Px(32, 9);
+      g.ellipse(16, 9, 15.5, 3.5, 'Z');
+      g.rect(11, 2, 8, 5, 'Z');
+      g.rect(14, 0, 3, 1, 'X');
+      g.rect(14, 1, 1, 1, 'X');
+      g.rim('ZX');
+      g.rect(12, 4, 6, 1, 'y');
+      return g.outline();
+    },
+    droneBoat() {
+      const g = new Px(16, 8);
+      g.poly([[0, 4], [13, 4], [16, 6], [2, 7.5]], 'k');
+      g.rect(5, 1, 5, 3, 'Z');
+      g.rect(7, 0, 1, 1, 'X');
+      g.rim('kZ');
+      g.rect(1, 5, 13, 1, 'a');
+      return g.outline();
+    },
+    barge() {
+      const g = new Px(36, 8);
+      g.poly([[0, 2], [36, 2], [34, 7], [2, 7]], 'z');
+      g.rect(0, 1, 36, 2, 'X');
+      g.rim('zX');
+      g.rect(14, 1, 8, 1, 'y');
+      for (let x = 3; x < 34; x += 6) g.set(x, 5, 'Z');
+      return g.outline();
+    },
+    rocket() {
+      const g = new Px(10, 26);
+      g.poly([[5, 0], [8, 6], [2, 6]], 'r');
+      g.rect(2, 6, 6, 15, 'W');
+      g.poly([[2, 15], [0, 21], [2, 21]], 'r');
+      g.poly([[8, 15], [10, 21], [8, 21]], 'r');
+      g.rect(3, 21, 4, 2, 'Z');
+      g.rim('rW');
+      g.ellipse(5, 10, 1.5, 1.5, 'b');
+      g.rect(2, 14, 6, 1, 'x');
+      return g.outline();
+    },
+    flame(f) {
+      const g = new Px(8, 13);
+      const len = f ? 12 : 9;
+      g.poly([[1, 0], [7, 0], [4, len]], 'a');
+      g.poly([[2.5, 0], [5.5, 0], [4, len - 4]], 'e');
+      return g;
+    },
+    drone(f) {
+      const g = new Px(15, 6);
+      g.rect(5, 2, 5, 3, 'Z');
+      g.rect(1, 2, 13, 1, 'Z');
+      g.rect(2, 1, 1, 1, 'Z');
+      g.rect(12, 1, 1, 1, 'Z');
+      g.rect(f ? 0 : 1, 0, f ? 5 : 3, 1, 'x');
+      g.rect(f ? 10 : 11, 0, f ? 5 : 3, 1, 'x');
+      g.set(7, 4, '9');
+      return g.outline();
+    },
+    raft() {
+      const g = new Px(28, 20);
+      g.rect(1, 15, 26, 3, 'm');
+      for (let x = 1; x < 27; x += 5) g.rect(x, 15, 1, 3, 'M');
+      g.ellipse(5, 17, 3, 2, 'r');
+      g.ellipse(22, 17, 3, 2, 'b');
+      g.rect(12, 1, 1, 14, 'M');
+      g.poly([[13, 2], [24, 5], [22, 13], [13, 12]], 'U');
+      g.rim('mUrb');
+      g.rect(12, 0, 3, 1, 'r');
+      return g.outline();
+    },
+    tub() {
+      const g = new Px(22, 16);
+      g.poly([[1, 9], [21, 9], [19, 15], [3, 15]], 'W');
+      g.rect(0, 8, 22, 2, 'W');
+      g.rect(10, 1, 1, 8, 'k');
+      g.poly([[4, 3], [10, 0], [17, 3]], 'r');
+      g.rim('Wr');
+      g.rect(3, 15, 2, 1, 'Y');
+      g.rect(17, 15, 2, 1, 'Y');
+      g.ellipse(16, 7, 1.6, 1.4, 'y');
+      g.set(18, 7, 'a');
+      return g.outline();
+    },
+    rowboat() {
+      const g = new Px(24, 8);
+      g.poly([[0, 2], [24, 2], [20, 7], [3, 7]], 'm');
+      g.rim('m');
+      g.rect(6, 3, 3, 2, 'F');
+      g.rect(15, 4, 2, 2, 'R');
+      g.line(10, 2, 4, 7, 'M');
+      g.line(14, 2, 20, 7, 'M');
+      return g.outline();
+    },
+    swan() {
+      const g = new Px(30, 20);
+      g.poly([[2, 12], [26, 12], [23, 18], [5, 18]], 'X');
+      g.poly([[16, 4], [27, 9], [26, 13], [14, 13]], 'w');
+      g.line(25, 9, 26, 2, 'w', 2);
+      g.ellipse(25.5, 2, 2, 1.6, 'w');
+      g.rect(3, 9, 10, 2, 'G');
+      g.rect(3, 6, 1, 3, 'G');
+      g.rect(12, 6, 1, 3, 'G');
+      g.rim('wXG');
+      g.set(27, 2, 'a');
+      g.set(28, 2, 'a');
+      g.set(25, 1, 'k');
+      return g.outline();
+    },
+    gondola() {
+      const g = new Px(34, 18);
+      g.poly([[0, 10], [6, 14], [28, 14], [34, 8], [32, 16], [4, 17]], 'k');
+      g.rect(31, 6, 2, 3, 'x');
+      g.rect(9, 6, 3, 6, 'w');
+      for (let y = 7; y < 12; y += 2) g.rect(9, y, 3, 1, 'r');
+      g.rect(9, 3, 3, 3, 's');
+      g.rect(8, 2, 5, 1, 'f');
+      g.line(13, 6, 18, 16, 'M');
+      g.rim('kw');
+      return g.outline();
+    },
+    ferry() {
+      const g = new Px(38, 14);
+      g.poly([[0, 7], [36, 7], [38, 9], [34, 13], [3, 13]], 'W');
+      g.rect(6, 2, 24, 5, 'W');
+      g.rect(10, 0, 14, 2, 'W');
+      g.rim('W');
+      g.rect(1, 10, 35, 2, 'b');
+      for (let x = 8; x < 29; x += 3) g.rect(x, 4, 2, 2, 'u');
+      g.rect(26, 0, 2, 2, 'Z');
+      return g.outline();
     }
   };
 
@@ -1030,33 +1261,6 @@
     return g;
   }
 
-  // Small brick school front with a plaque
-  function school() {
-    const W = 74, H = 50, g = new Px(W, H);
-    g.rect(0, 6, W, 44, 'R');
-    for (let y = 8; y < 50; y += 3) g.rect(0, y, W, 1, 'H');
-    g.rect(-1, 2, W + 2, 4, 'W');
-    g.rect(0, 6, W, 2, 'x');
-    [[6, 14], [56, 14], [6, 32], [56, 32]].forEach(([x, y]) => {
-      g.rect(x, y, 12, 12, 'W');
-      g.rect(x + 1, y + 1, 10, 10, 'u');
-      g.rect(x + 6, y + 1, 1, 10, 'W');
-      g.rect(x + 1, y + 6, 10, 1, 'W');
-    });
-    g.rect(27, 24, 20, 26, 'x');
-    g.ellipse(37, 25, 10, 8, 'x');
-    g.rect(29, 27, 16, 23, 'k');
-    g.ellipse(37, 27, 8, 6, 'k');
-    g.rect(36, 30, 2, 20, 'Z');
-    g.rect(24, 47, 26, 3, 'X');
-    g.rim('WxRX');
-    g.outline();
-    const t = text("SAINT ANN'S", 'y');
-    g.rect(37 - Math.ceil(t.w / 2) - 2, 10, t.w + 4, 9, 'k');
-    g.blit(t, 37 - Math.ceil(t.w / 2), 12);
-    return g;
-  }
-
   // Construction barrier at the end of the road
   function barrier() {
     const t = text('MORE SOON', 'k');
@@ -1070,6 +1274,81 @@
     g.outline();
     g.rect(3, 2, t.w + 6, 7, 'W');
     g.blit(t, 6, 3);
+    return g;
+  }
+
+  // St. Ann & the Holy Trinity, Brooklyn Heights: Gothic Revival brownstone
+  // with a central tower that lost its spire in 1906 (now flat-topped).
+  function church() {
+    const W = 76, H = 134, g = new Px(W, H);
+    const pal = ['b', 'v', 'r', 'y', 't', 'b', 'p', 'c'];
+    const glass = (x, y) => g.set(x, y, pal[(x * 3 + y * 5) % pal.length]);
+    // pointed-arch opening, filled pixel by pixel
+    const lancet = (x0, y0, w, h, fill) => {
+      for (let y = 0; y < h; y++) {
+        const inset = Math.max(0, Math.floor(w / 2) - 1 - y);
+        for (let x = inset; x < w - inset; x++) fill(x0 + x, y0 + y);
+      }
+    };
+    g.poly([[6, 72], [37.5, 40], [69, 72]], 'Z');
+    g.rect(3, 70, 23, 64, '5');
+    g.rect(50, 70, 23, 64, '5');
+    g.poly([[1, 72], [26, 60], [26, 72]], 'Z');
+    g.poly([[49, 60], [74, 72], [49, 72]], 'Z');
+    g.rect(26, 14, 24, 120, '5');
+    g.rect(24, 10, 28, 4, '7');
+    for (let x = 25; x < 51; x += 4) g.rect(x, 7, 2, 3, '5');
+    [24, 48].forEach((x) => {
+      g.rect(x, 3, 4, 11, '5');
+      g.rect(x + 1, 0, 2, 3, '5');
+    });
+    [22, 50].forEach((x) => {
+      g.rect(x, 56, 4, 78, '6');
+      g.rect(x + 1, 52, 2, 4, '6');
+    });
+    [0, 72].forEach((x) => {
+      g.rect(x, 74, 4, 60, '6');
+      g.rect(x + 1, 63, 2, 11, '5');
+      g.rect(x + 1, 61, 1, 2, '5');
+    });
+    g.rim('567Z');
+    [29, 42].forEach((x) => lancet(x, 18, 5, 16, (px, py) => g.set(px, py, py % 2 ? 'k' : 'Z')));
+    g.ellipse(38, 45.5, 5, 5, '7');
+    g.ellipse(38, 45.5, 3.6, 3.6, 'b');
+    g.rect(37, 42, 2, 8, '6');
+    g.rect(34, 45, 8, 1, '6');
+    lancet(32, 53, 12, 22, glass);
+    [35, 40].forEach((x) => g.rect(x, 58, 1, 17, '6'));
+    g.rect(32, 64, 12, 1, '6');
+    lancet(30, 104, 16, 30, (px, py) => g.set(px, py, '7'));
+    lancet(32, 107, 12, 27, (px, py) => g.set(px, py, 'H'));
+    g.rect(37, 111, 2, 23, 'k');
+    [7, 64].forEach((x) => lancet(x, 100, 5, 28, glass));
+    g.rect(29, 131, 18, 3, 'x');
+    g.outline();
+    // the school's name on a sign band across the front
+    const t = text("SAINT ANN'S", 'y');
+    const pw = t.w + 14, px = Math.round(38 - pw / 2);
+    g.rect(px - 1, 77, pw + 2, 14, '7');
+    g.rect(px, 78, pw, 12, 'k');
+    g.blit(t, px + 7, 82);
+    return g;
+  }
+
+  // Chequered finish-line banner
+  function finishSign() {
+    const W = 64, g = new Px(W, 46);
+    g.rect(3, 4, 3, 42, 'X');
+    g.rect(W - 6, 4, 3, 42, 'X');
+    g.rect(2, 2, 5, 2, 'x');
+    g.rect(W - 7, 2, 5, 2, 'x');
+    g.rect(0, 6, W, 15, 'w');
+    for (let y = 6; y < 21; y += 3)
+      for (let x = 0; x < W; x += 3) if ((x / 3 + (y - 6) / 3) % 2 === 0) g.rect(x, y, 3, 3, 'k');
+    g.outline();
+    const t = text('FINISH', 'k');
+    g.rect(32 - Math.ceil(t.w / 2) - 3, 8, t.w + 6, 11, 'w');
+    g.blit(t, 32 - Math.ceil(t.w / 2), 11);
     return g;
   }
 
@@ -1170,7 +1449,7 @@
 
   HA.pix = {
     PAL, Px, ICON_NAMES: Object.keys(ICONS),
-    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, school, barrier, text,
+    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, church, finishSign, barrier, text,
     toCanvas, iconURL
   };
 })();

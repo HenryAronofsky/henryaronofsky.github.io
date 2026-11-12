@@ -9,7 +9,7 @@
   const T = {
     walk: 92, run: 172, acc: 950, dec: 1300, air: 620,
     gUp: 860, gCut: 1900, gDown: 1250, jump: 268, maxFall: 560,
-    coyote: 0.09, buffer: 0.13, near: 56, far: 74
+    coyote: 0.09, buffer: 0.13, near: 50, far: 56
   };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -32,40 +32,50 @@
       frames[name] = (Array.isArray(f) ? f : [f]).map((g) => ({ r: mk(g), l: mk(g.flip()) }));
     });
     const ghost = P.toCanvas(CH.side.idle[0], 1, { color: '#ffffff', amount: 1 });
-    const icons = {}, big = {};
-    L.stops.forEach((s) => {
-      icons[s.id] = mk(P.icon(s.icon));
-      const b = P.icon(s.bigIcon || s.icon);
-      big[s.id] = { clear: P.toCanvas(b, 3), haze: P.toCanvas(b, 3, { color: '#d3ebf9', amount: 0.6 }) };
-    });
-    const pigeonArt = P.PROPS.pigeon().map((g) => ({ r: mk(g), l: mk(g.flip()) }));
-    const birdArt = P.PROPS.bird().map(mk);
-    const boatArt = ['r', 'b', 'y'].map((c) => mk(P.PROPS.sailboat(c)));
-    const shellArt = [mk(P.PROPS.shell(0)), mk(P.PROPS.shell(1))];
-    const flagArt = [0, 1, 2, 3].map((f) => mk(P.PROPS.flag('R', f)));
+    const icons = {};
+    L.stops.forEach((s) => (icons[s.id] = mk(P.icon(s.icon))));
+    const A = P.PROPS;
+    const pigeonArt = A.pigeon().map((g) => ({ r: mk(g), l: mk(g.flip()) }));
+    const birdArt = A.bird().map(mk);
+    const droneArt = [mk(A.drone(0)), mk(A.drone(1))];
+    const flagArt = [0, 1, 2, 3].map((f) => mk(A.flag('R', f)));
+    const boatArt = {
+      sailR: mk(A.sailboat('r')), sailB: mk(A.sailboat('b')), sailY: mk(A.sailboat('y')), ferry: mk(A.ferry()),
+      shell: [mk(A.shell(0)), mk(A.shell(1))], hydrofoil: mk(A.hydrofoil()), sub: mk(A.sub()), droneBoat: mk(A.droneBoat()),
+      raft: mk(A.raft()), tub: mk(A.tub()), rowboat: mk(A.rowboat()), swan: mk(A.swan()), gondola: mk(A.gondola())
+    };
+    const bargeArt = mk(A.barge()), rocketArt = mk(A.rocket()), flameArt = [mk(A.flame(0)), mk(A.flame(1))];
 
     /* ---------------------------------------------------------- state */
     let S = 4, dpr = 1, k = 4, vw = 0, vh = 0, VW = 0, VH = 0, G = 0, SHORE = 0;
-    let skyCanvas = null, waterNYC = null, waterBOS = null;
+    let skyCanvas = null, waters = [];
     let raf = 0, last = 0, time = 0, running = false;
     const char = { x: L.spawn, y: 0, vx: 0, vy: 0, face: 1, ground: true, plat: null, squat: false, coyote: 0, buffer: 0, jumpHeld: false, dist: 0, land: 0, blinkAt: 2.5, dropUntil: 0 };
     const cam = { x: 0, lead: 0.36 };
     const keys = { left: false, right: false, down: false, run: false };
-    let spawnT = 0, spawning = true, autoRun = null, active = null, chapter = null, camStart = 0, dockOn = false;
-    let particles = [], birds = [], nextFlock = 6, guideShown = false, guideGone = false, walked = 0;
-    const pigeons = [];
+    let spawnT = 0, spawning = true, autoRun = null, active = null, chapter = null, camStart = 0, chromeOn = false;
+    let idleT = 0, feedT = 0, tossT = 0, crumbs = [];
+    let particles = [], birds = [], nextFlock = 6, mainZone = 0, guideShown = false, guideGone = false, walked = 0;
+    let pigeons = [];
     L.pigeons.forEach((g, gi) => {
       for (let i = 0; i < g.n; i++)
         pigeons.push({ hx: g.x + i * 11 - g.n * 5, x: g.x + i * 11 - g.n * 5, y: 0, vx: 0, vy: 0, face: (i + gi) % 2 ? 1 : -1, fly: false, t: Math.random() * 3, gone: false });
     });
-    const boats = [
-      { art: boatArt[0], x: 120, y: 9, p: 0.22, v: 5 },
-      { art: boatArt[1], x: 420, y: 16, p: 0.28, v: -4 },
-      { art: boatArt[2], x: 760, y: 12, p: 0.25, v: 6 },
-      { art: boatArt[0], x: 1220, y: 18, p: 0.3, v: -5 },
-      { shell: true, x: 600, y: 26, p: 0.34, v: 14, city: 1 },
-      { shell: true, x: 1500, y: 22, p: 0.32, v: -12, city: 1 }
-    ];
+    // Boats for each kind of water: [art, x, depth below the far shore, parallax, speed]
+    const FLEET = {
+      harbor: [['sailR', 120, 9, 0.22, 5], ['ferry', 560, 20, 0.3, -9], ['sailB', 900, 14, 0.26, -4], ['sailY', 1200, 11, 0.24, 6]],
+      charles: [['sailB', 300, 12, 0.24, 5], ['shell', 640, 24, 0.33, 14], ['sailR', 980, 10, 0.22, -4], ['shell', 1260, 20, 0.31, -12]],
+      tech: [['hydrofoil', 200, 22, 0.32, 22], ['sub', 640, 26, 0.34, -6], ['droneBoat', 920, 14, 0.26, 12], ['hydrofoil', 1180, 12, 0.24, -18]],
+      junk: [['raft', 260, 18, 0.28, 4], ['tub', 660, 24, 0.32, -5], ['rowboat', 1000, 12, 0.24, 6]],
+      marble: [['swan', 300, 20, 0.3, 4], ['gondola', 720, 26, 0.34, -6], ['sailR', 1100, 10, 0.22, 5]]
+    };
+    const boats = [];
+    L.zones.forEach((z, zi) => (FLEET[z.style.boats] || []).forEach(([art, x, y, p, v]) => boats.push({ art, x: x + zi * 97, y, p, v, zi })));
+    // How much of each zone's backdrop is showing; eased so changes always fade
+    let zw = L.zones.map((z, i) => (i ? 0 : 1));
+    const techZone = L.zones.findIndex((z) => z.style.sky === 'drones');
+    const rocket = { state: 'pad', y: 0, v: 0, wait: 2.5 };
+    let smoke = [];
     const shimmer = [];
     for (let i = 0; i < 90; i++) shimmer.push({ x: Math.random() * 3000, row: Math.random(), ph: Math.random() * 6.28, w: 2 + Math.floor(Math.random() * 3) });
 
@@ -87,8 +97,7 @@
       canvas.style.height = vh + 'px';
       ctx.imageSmoothingEnabled = false;
       skyCanvas = SC.sky(VW + 2, SHORE + 4, SHORE);
-      waterNYC = waterGradient([126, 178, 210], [70, 128, 172]);
-      waterBOS = waterGradient([150, 206, 238], [84, 154, 210]);
+      waters = L.zones.map((z) => waterGradient(z.style.water[0], z.style.water[1]));
       document.documentElement.style.setProperty('--px', S + 'px');
       if (!spawning) camera(1);
       draw();
@@ -127,24 +136,22 @@
 
     function draw() {
       if (!skyCanvas) return;
-      const city = L.cityAt(cam.x + VW / 2);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(skyCanvas, 0, 0, skyCanvas.width * k, skyCanvas.height * k);
       // sun and clouds
       put(world.sun, VW * 0.8 - 22 - cam.x * 0.01, 4);
       drawClouds(world.cloudsFar, 0.03, 3, 18, 0.9);
-      // far skylines, cross-fading from New York to Boston
+      // far backdrops, cross-fading as you move from one part of the walk to the next
       const farY = SHORE - SC.FAR_H;
-      if (city < 1) layer(world.far.nyc, SC.PARALLAX.far, farY);
-      if (city > 0) {
-        ctx.globalAlpha = city;
-        layer(world.far.bos, SC.PARALLAX.far, farY);
-        ctx.globalAlpha = 1;
-      }
+      world.far.forEach((f, i) => {
+        if (zw[i] < 0.004) return;
+        ctx.globalAlpha = Math.min(1, zw[i]);
+        layer(f.img, SC.PARALLAX.far, farY, f.origin);
+      });
+      ctx.globalAlpha = 1;
       drawClouds(world.cloudsNear, 0.06, 6, 34, 0.75);
-      drawBigIcons(false);
-      drawWater(city);
+      drawWater();
       drawBirds();
       // riverbank, walkway, props
       layer(world.bank, SC.PARALLAX.bank, G - 10 - SC.BANK_H);
@@ -155,6 +162,7 @@
         put(f.img, f.x - cam.x, G + f.y);
       });
       drawStops();
+      crumbs.forEach((c) => box(c.x - cam.x, c.y, c.air ? 1 : 2, 1, '#ecc993'));
       drawPigeons();
       drawChar();
       drawParticles();
@@ -170,49 +178,20 @@
       });
     }
 
-    function bigIconPos(s) {
-      const p = SC.PARALLAX.icons;
-      const target = VW * 0.38 + 70;
-      const lx = target + p * (s.x - VW * 0.38);
-      return lx - cam.x * p;
-    }
-    function drawBigIcons() {
-      L.stops.forEach((s, i) => {
-        const x = bigIconPos(s);
-        if (x < -80 || x > VW + 10) return;
-        const near = clamp(1 - Math.abs(char.x - s.x) / 220, 0, 1);
-        const bob = RM.matches ? 0 : Math.sin(time * 0.9 + i) * 2;
-        const y = SHORE - 84 + bob;
-        const b = big[s.id];
-        put(b.haze, x, y, 0.5 + 0.2 * near);
-        if (near > 0.02) put(b.clear, x, y, near * 0.72);
-        // reflection in the water
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, R(SHORE), canvas.width, R(G - 8) - R(SHORE));
-        ctx.clip();
-        ctx.translate(0, R(SHORE) * 2);
-        ctx.scale(1, -1);
-        ctx.globalAlpha = 0.16 + 0.1 * near;
-        ctx.drawImage(b.haze, R(x), R(y + 10), b.haze.width * k, b.haze.height * k);
-        ctx.restore();
+    function drawWater() {
+      const h = G - 8 - SHORE, y0 = R(SHORE), hh = R(G - 8) - R(SHORE);
+      const order = zw.map((w, i) => [w, i]).filter(([w]) => w > 0.004).sort((a, b) => b[0] - a[0]);
+      order.forEach(([w, i], n) => {
+        ctx.globalAlpha = n === 0 ? 1 : w;
+        ctx.drawImage(waters[i], 0, 0, 1, h, 0, y0, canvas.width, hh);
       });
-    }
-
-    function drawWater(city) {
-      const h = G - 8 - SHORE;
-      ctx.globalAlpha = 1;
-      ctx.drawImage(waterNYC, 0, 0, 1, h, 0, R(SHORE), canvas.width, R(G - 8) - R(SHORE));
-      if (city > 0) {
-        ctx.globalAlpha = city;
-        ctx.drawImage(waterBOS, 0, 0, 1, h, 0, R(SHORE), canvas.width, R(G - 8) - R(SHORE));
-      }
-      // wobbly reflections of the skyline
-      const p = SC.PARALLAX.far, off = cam.x * p;
-      [[world.far.nyc, 1 - city], [world.far.bos, city]].forEach(([img, w]) => {
-        if (w <= 0.01) return;
+      // wobbly reflections of whatever stands across the river
+      const p = SC.PARALLAX.far;
+      order.forEach(([w, i]) => {
+        const f = world.far[i], img = f.img, off = cam.x * p - f.origin;
         const sx = Math.max(0, Math.floor(off) - 2), sw = Math.min(img.width - sx, VW + 6);
-        for (let r = 0; r < h; r += 1) {
+        if (sw <= 0) return;
+        for (let r = 0; r < h; r++) {
           const src = SC.FAR_H - 1 - Math.floor(r * 1.15);
           if (src < 0) break;
           const wob = RM.matches ? 0 : Math.round(Math.sin(time * 1.7 + r * 0.6) * (0.4 + r * 0.05));
@@ -229,19 +208,48 @@
         const tw = Math.sin(time * 2.4 + s.ph);
         if (tw > 0.35) box(x, SHORE + row, s.w, 1, '#ffffff', (tw - 0.35) * 1.1);
       });
-      // boats
+      // boats that belong to this stretch of water
       boats.forEach((b) => {
-        if (b.city && city < 0.5) return;
+        const w = zw[b.zi];
+        if (w < 0.02) return;
         const span = 1400;
         const bx = (((b.x + time * b.v - cam.x * b.p) % span) + span) % span - 100;
-        if (bx < -50 || bx > VW + 10) return;
-        if (b.shell) put(shellArt[Math.floor(time * 2.5) % 2], bx, SHORE + b.y - 6);
-        else put(b.art, bx, SHORE + b.y - 18);
+        if (bx < -60 || bx > VW + 10) return;
+        const art = b.art === 'shell' ? boatArt.shell[Math.floor(time * 2.5) % 2] : boatArt[b.art];
+        put(art, bx, SHORE + b.y - art.height + 2, Math.min(1, w));
       });
+      drawRocket();
+    }
+
+    // A rocket on a floating launch pad in the experience stretch; it lifts off now and then
+    function bargeX() {
+      const z = L.zones[techZone], p = 0.27;
+      const mid = (z.from + Math.min(z.to, L.len)) / 2;
+      return mid * p + VW * 0.7 - cam.x * p;
+    }
+    function drawRocket() {
+      if (techZone < 0 || zw[techZone] < 0.02) return;
+      const bx = bargeX(), by = SHORE + 17;
+      if (bx < -60 || bx > VW + 30) return;
+      const a = Math.min(1, zw[techZone]);
+      smoke.forEach((s) => {
+        const al = a * 0.7 * Math.min(1, s.life / s.max);
+        box(bx + s.dx - s.r, s.y - s.r * 0.6, s.r * 2, s.r * 1.2, '#f2f5f8', al);
+        box(bx + s.dx - s.r * 0.6, s.y - s.r, s.r * 1.2, s.r * 2, '#f2f5f8', al);
+      });
+      const top = by - bargeArt.height + 2;
+      put(bargeArt, bx, top, a);
+      if (rocket.state === 'gone') return;
+      const ry = top - rocketArt.height + 2 - rocket.y;
+      if (rocket.state === 'launch') put(flameArt[Math.floor(time * 16) % 2], bx + 14, ry + rocketArt.height - 4, a);
+      put(rocketArt, bx + 13, ry, a);
     }
 
     function drawBirds() {
-      birds.forEach((b) => put(birdArt[Math.floor(time * 6 + b.ph) % 2], b.x, b.y));
+      birds.forEach((b) => {
+        if (b.kind === 'drone') put(droneArt[Math.floor(time * 20 + b.ph) % 2], b.x, b.y + Math.sin(time * 3 + b.ph) * 1.5);
+        else put(birdArt[Math.floor(time * 6 + b.ph) % 2], b.x, b.y);
+      });
     }
 
     function drawFlags() {
@@ -278,8 +286,8 @@
       pigeons.forEach((p) => {
         if (p.gone || p.x < cam.x - 20 || p.x > cam.x + VW + 20) return;
         let f;
-        if (p.fly) f = pigeonArt[2 + (Math.floor(time * 14) % 2)];
-        else f = pigeonArt[Math.sin(p.t * 2.3) > 0.6 ? 1 : 0];
+        if (p.fly || p.arrive) f = pigeonArt[2 + (Math.floor(time * 14) % 2)];
+        else f = pigeonArt[Math.sin(p.t * (p.eating ? 9 : 2.3)) > (p.eating ? 0 : 0.6) ? 1 : 0];
         put(p.face > 0 ? f.r : f.l, p.x - cam.x - 5, G - 6 - p.y);
       });
     }
@@ -289,6 +297,7 @@
       if (!char.ground) return char.vy > 30 ? frames.jump[0] : frames.fall[0];
       if (char.land > 0) return frames.land[0];
       if (char.squat) return frames.squat[0];
+      if (tossT > 0) return frames.toss[tossT > 0.22 ? 0 : 1];
       const sp = Math.abs(char.vx);
       if (sp > 140) return frames.run[Math.floor(sp > 600 ? time * 18 : char.dist / 12) % 8];
       if (sp > 6) return frames.walk[Math.floor(char.dist / 7) % 8];
@@ -367,6 +376,8 @@
         }
       } else move(dt);
       camera(dt);
+      const tw = L.weights(cam.x + VW * 0.4);
+      zw = zw.map((w, i) => w + (tw[i] - w) * Math.min(1, dt * 2.4));
       updateWorld(dt);
       updateUI();
     }
@@ -418,7 +429,7 @@
           char.ground = false;
           char.plat = null;
           dust(char.x, 3);
-          ui.controls.did('jump');
+          ui.controls.did('move');
         }
         char.buffer = 0;
         char.coyote = 0;
@@ -432,9 +443,8 @@
       if (char.x === 16 || char.x === L.end + 4) char.vx = 0;
       char.dist += Math.abs(char.x - ox);
       walked += Math.abs(char.x - ox);
-      if (Math.abs(char.x - ox) > 0 && !autoRun && (keys.left || keys.right)) ui.controls.did('walk');
+      if (Math.abs(char.x - ox) > 0 && !autoRun && (keys.left || keys.right)) ui.controls.did('move');
       if (keys.run && Math.abs(char.vx) > T.walk + 10) ui.controls.did('run');
-      if (char.squat) ui.controls.did('squat');
       // vertical: platforms and the ground
       if (!char.ground) {
         char.y += char.vy * dt;
@@ -489,36 +499,131 @@
         if (p.kind === 'spark') p.vy += 60 * dt;
       });
       particles = particles.filter((p) => p.life > 0);
-      // pigeons scatter when you get close
+      feed(dt);
+      // pigeons: come down for crumbs, scatter when you walk at them
       pigeons.forEach((p) => {
         p.t += dt;
         if (p.gone) {
-          if (Math.abs(char.x - p.hx) > VW && Math.abs(cam.x + VW / 2 - p.hx) > VW) Object.assign(p, { gone: false, fly: false, x: p.hx, y: 0 });
+          if (!p.visitor && Math.abs(char.x - p.hx) > VW && Math.abs(cam.x + VW / 2 - p.hx) > VW) Object.assign(p, { gone: false, fly: false, x: p.hx, y: 0 });
           return;
         }
-        if (!p.fly) {
-          const d = Math.abs(char.x - p.x);
-          if (d < 40 || (d < 70 && (Math.abs(char.vx) > 140 || !char.ground))) {
-            p.fly = true;
-            p.face = char.x < p.x ? 1 : -1;
-            p.vx = p.face * (50 + Math.random() * 40);
-            p.vy = 50 + Math.random() * 30;
-          } else if (Math.random() < dt * 0.3) p.face = -p.face;
-        } else {
+        const d = Math.abs(char.x - p.x), moving = Math.abs(char.vx) > 6 || !char.ground;
+        if (!p.fly && ((d < 40 && moving) || (d < 70 && (Math.abs(char.vx) > 140 || !char.ground)) || d < 7)) {
+          p.fly = true;
+          p.arrive = false;
+          p.eating = false;
+          p.face = char.x < p.x ? 1 : -1;
+          p.vx = p.face * (50 + Math.random() * 40);
+          p.vy = 50 + Math.random() * 30;
+        }
+        if (p.fly) {
           p.x += p.vx * dt;
           p.y += p.vy * dt;
           p.vy += 12 * dt;
           if (p.y > G + 20) p.gone = true;
+        } else if (p.arrive) {
+          // glide down beside the food
+          const dx = p.tx - p.x;
+          p.face = Math.sign(dx) || p.face;
+          p.x += Math.sign(dx) * Math.min(Math.abs(dx), 70 * dt);
+          p.y = Math.max(0, p.y - dt * (Math.abs(dx) < 40 ? 70 : 14));
+          if (Math.abs(dx) < 1 && p.y <= 0) p.arrive = false;
+        } else {
+          // peck at the nearest crumb on the ground
+          let c = null;
+          crumbs.forEach((k) => {
+            if (!k.air && Math.abs(k.x - p.x) < 50 && (!c || Math.abs(k.x - p.x) < Math.abs(c.x - p.x))) c = k;
+          });
+          p.eating = !!c && Math.abs(c.x - p.x) < 3;
+          if (c && !p.eating) {
+            p.face = Math.sign(c.x - p.x);
+            p.x += p.face * 16 * dt;
+          } else if (c) c.life = Math.min(c.life, 0.5 + Math.random() * 0.4);
+          else if (Math.random() < dt * 0.3) p.face = -p.face;
         }
       });
-      // a flock of birds now and then
+      pigeons = pigeons.filter((p) => !(p.visitor && p.gone));
+      // a flock of birds now and then (delivery drones over the experience stretch)
+      const main = zw.indexOf(Math.max(...zw));
+      if (main !== mainZone) {
+        mainZone = main;
+        nextFlock = Math.min(nextFlock, time + 1.5);
+      }
       if (time > nextFlock) {
         nextFlock = time + 12 + Math.random() * 10;
+        const drone = L.zones[main].style.sky === 'drones';
         const y = 14 + Math.random() * (SHORE - 70);
-        for (let i = 0; i < 4; i++) birds.push({ x: -20 - i * 9, y: y + Math.abs(i - 1.5) * 4, ph: i });
+        for (let i = 0; i < (drone ? 2 : 4); i++)
+          birds.push({ kind: drone ? 'drone' : 'bird', x: -20 - i * (drone ? 28 : 9), y: y + (drone ? i * 7 : Math.abs(i - 1.5) * 4), ph: i });
       }
-      birds.forEach((b) => (b.x += dt * 22));
+      birds.forEach((b) => (b.x += dt * (b.kind === 'drone' ? 34 : 22)));
       birds = birds.filter((b) => b.x < VW + 20);
+      // rocket launches
+      if (techZone >= 0 && zw[techZone] > 0.4 && !RM.matches) {
+        rocket.wait -= dt;
+        if (rocket.state === 'pad' && rocket.wait < 0) {
+          rocket.state = 'launch';
+          rocket.v = 6;
+        } else if (rocket.state === 'launch') {
+          rocket.v += 46 * dt;
+          rocket.y += rocket.v * dt;
+          if (Math.random() < dt * 28) smoke.push({ dx: 18 + (Math.random() - 0.5) * 5, y: SHORE + 16 - 10 - rocket.y + 24, r: 1.5, life: 1.6, max: 1.6 });
+          if (rocket.y > SHORE + 60) {
+            rocket.state = 'gone';
+            rocket.wait = 1.5;
+          }
+        } else if (rocket.state === 'gone' && rocket.wait < 0) {
+          rocket.state = 'pad';
+          rocket.y = 0;
+          rocket.wait = 2 + Math.random() * 2.5;
+        }
+      }
+      smoke.forEach((s) => {
+        s.life -= dt;
+        s.r += dt * 3.2;
+        s.y += dt * 2;
+      });
+      smoke = smoke.filter((s) => s.life > 0);
+    }
+
+    /* ---------------------------------------------------- crumbs */
+    // Stand still for about eight seconds and he starts feeding the pigeons
+    function feed(dt) {
+      const still = !spawning && !autoRun && char.ground && !char.plat && Math.abs(char.vx) < 1 &&
+        !keys.left && !keys.right && !keys.down && !keys.run && !char.jumpHeld && !ui.panel.isOpen();
+      idleT = still ? idleT + dt : 0;
+      tossT = Math.max(0, tossT - dt);
+      if (idleT > 8) {
+        feedT -= dt;
+        if (feedT <= 0) {
+          feedT = 1.2 + Math.random() * 0.7;
+          tossT = 0.45;
+          for (let i = 0; i < 5; i++)
+            crumbs.push({ x: char.x + char.face * 8, y: G - 20, vx: char.face * (24 + Math.random() * 46), vy: -(28 + Math.random() * 34), air: true, delay: 0.22, life: 40, land: G - 3 + Math.floor(Math.random() * 6) });
+          callPigeons();
+        }
+      } else feedT = 0.3;
+      crumbs.forEach((c) => {
+        if (c.delay > 0) return void (c.delay -= dt);
+        if (c.air) {
+          c.vy += 200 * dt;
+          c.x += c.vx * dt;
+          c.y += c.vy * dt;
+          if (c.vy > 0 && c.y >= c.land) {
+            c.y = c.land;
+            c.air = false;
+          }
+        } else c.life -= dt;
+      });
+      crumbs = crumbs.filter((c) => c.life > 0).slice(-40);
+    }
+    function callPigeons() {
+      const here = pigeons.filter((p) => !p.gone && !p.fly && Math.abs(p.x - char.x) < VW * 0.6).length;
+      for (let i = here; i < 4; i++) {
+        const side = Math.random() < 0.7 ? char.face : -char.face;
+        const tx = char.x + side * (14 + Math.random() * 42);
+        pigeons.push({ visitor: true, arrive: true, tx, hx: tx, x: char.x + side * (VW * 0.55 + i * 16), y: 60 + Math.random() * 40, vx: 0, vy: 0, face: -side, fly: false, t: Math.random() * 3, gone: false });
+      }
     }
 
     /* ---------------------------------------------------- UI syncing */
@@ -547,7 +652,7 @@
       }
       if (active) {
         const top = active.landmark === 'gate' ? G - 72 : G - 50;
-        ui.bubble.place((active.x - cam.x) * S, top * S + Math.sin(time * 2) * 2);
+        ui.bubble.place((active.x - cam.x) * S, top * S);
       }
       // header chapter
       let ch = L.chapters[0];
@@ -556,11 +661,11 @@
         chapter = ch.id;
         ui.setChapter(chapter);
       }
-      // dock appears once you leave the starting spot
-      const away = Math.abs(char.x - L.spawn) > 20;
-      if (away !== dockOn && !spawning) {
-        dockOn = away;
-        ui.dock(away);
+      // header and footer slide in once you walk forward from the start
+      const forward = char.x > L.spawn + 20;
+      if (forward !== chromeOn && !spawning) {
+        chromeOn = forward;
+        ui.chrome(forward);
       }
       // title card drifts with parallax and fades as you leave
       const dx = cam.x - camStart;
@@ -573,7 +678,7 @@
         const gx = Math.max(controlsEl.offsetWidth + 10, (L.spawn - 18 - cam.x) * S);
         controlsEl.style.transform = `translate(${Math.round(gx)}px, ${Math.round((G - 12) * S)}px) translate(-100%, -100%)`;
         const done = ui.controls.done;
-        if ((done.has('walk') && done.has('jump') && walked > 160) || char.x > L.stops[0].x - 60) {
+        if ((done.has('move') && walked > 160) || char.x > L.stops[0].x - 60) {
           guideGone = true;
           ui.controls.hide();
         }
@@ -604,10 +709,7 @@
         if (down && !e.repeat) char.buffer = T.buffer;
         char.jumpHeld = down;
       } else if (act === 'open') {
-        if (down && !e.repeat && active) {
-          ui.controls.did('open');
-          open(active.id);
-        }
+        if (down && !e.repeat && active) open(active.id);
       } else keys[act] = down;
     }
     function onBlur() {
@@ -620,11 +722,7 @@
       return { x: (e.clientX - r.left) / S + cam.x, y: (e.clientY - r.top) / S };
     }
     function hitStop(pt) {
-      return L.stops.find((s, i) => {
-        if (Math.abs(pt.x - s.x) < 16 && pt.y > stopIconY(s, i) - 6 && pt.y < G) return true;
-        const bx = bigIconPos(s) + cam.x;
-        return pt.x > bx && pt.x < bx + 72 && pt.y > SHORE - 84 && pt.y < SHORE - 12;
-      });
+      return L.stops.find((s, i) => Math.abs(pt.x - s.x) < 16 && pt.y > stopIconY(s, i) - 6 && pt.y < G);
     }
     function onClick(e) {
       if (spawning) return;
@@ -647,6 +745,7 @@
         char.x = x;
         char.vx = 0;
         cam.x = clamp(x - VW * 0.36, 0, L.len - VW);
+        zw = L.weights(cam.x + VW * 0.4);
         if (face) char.face = face;
         if (then) then();
         return;
@@ -708,6 +807,7 @@
       } else if (c && c.id !== L.chapters[0].id) char.x = standX(L.stops.find((x) => x.chapter === c.id));
       cam.lead = 0.36;
       cam.x = clamp(char.x - VW * (char.x === L.spawn ? 0.3 : 0.36), 0, L.len - VW);
+      zw = L.weights(cam.x + VW * 0.4);
       camStart = clamp(L.spawn - VW * 0.3, 0, L.len - VW);
       if (char.x !== L.spawn) {
         guideGone = true;
@@ -731,9 +831,9 @@
       canvas.removeEventListener('click', onClick);
       canvas.removeEventListener('mousemove', onMove);
       ui.bubble.hide();
-      ui.dock(false);
+      ui.chrome(false);
       active = null;
-      dockOn = false;
+      chromeOn = false;
       stage.hidden = true;
       let near = L.stops[0];
       L.stops.forEach((st) => { if (Math.abs(st.x - char.x) < Math.abs(near.x - char.x)) near = st; });

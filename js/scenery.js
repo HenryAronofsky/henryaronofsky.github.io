@@ -10,7 +10,7 @@
   const NEAR_BOT = 72; // rows below it
   const FAR_H = 130; // skyline canvas height (baseline = bottom row)
   const BANK_H = 124; // riverbank layer height (baseline = bottom row)
-  const PARALLAX = { far: 0.12, bank: 0.6, fore: 1.22, icons: 0.36 };
+  const PARALLAX = { far: 0.12, bank: 0.6, fore: 1.22 };
   // Typical screen width (art px) used to line parallax landmarks up with stops
   const REF_VIEW = 480;
 
@@ -52,72 +52,113 @@
   };
 
   /* -------------------------------------------------------------- layout */
+  const GAP = 124; // between neighbouring stops: one step between their pop-up ranges
+  const LEAD = 150; // from a section's sign to its first stop
+  const TAIL = 180; // from a section's last stop to the next sign
+  const TRAVEL = 380; // Saint Ann's in Brooklyn to Harvard in Cambridge, about a four-second walk
+
+  // How each stretch of the walk looks
+  const NYC_WATER = [[126, 178, 210], [70, 128, 172]];
+  const ZONES = {
+    brooklyn: { far: 'nyc', rail: 'ny', walk: 'pavers', lamp: 'lampNY', water: NYC_WATER, boats: 'harbor', sky: 'birds' },
+    cambridge: { far: 'bos', rail: 'cam', walk: 'brick', lamp: 'lampCam', water: [[150, 206, 238], [84, 154, 210]], boats: 'charles', sky: 'birds' },
+    tech: { far: 'tech', rail: 'tech', walk: 'tech', lamp: 'lampTech', water: [[118, 206, 222], [38, 116, 168]], boats: 'tech', sky: 'drones' },
+    junk: { far: 'junk', rail: 'junk', walk: 'planks', lamp: 'lampJunk', water: [[146, 186, 176], [82, 132, 128]], boats: 'junk', sky: 'birds' },
+    marble: { far: 'marble', rail: 'marble', walk: 'marble', lamp: 'lampMarble', water: [[136, 196, 238], [58, 108, 190]], boats: 'marble', sky: 'birds' },
+    finish: { far: 'nyc', rail: 'ny', walk: 'pavers', lamp: 'lampNY', water: NYC_WATER, boats: 'harbor', sky: 'birds' }
+  };
+
   function layout(content) {
-    const L = { spawn: 170, stops: [], signs: [], decor: [], platforms: [], pigeons: [], chapters: [] };
+    const L = { spawn: 170, stops: [], signs: [], decor: [], platforms: [], pigeons: [], chapters: [], zones: [] };
     const label = {};
     content.chapters.forEach((c) => (label[c.id] = c.label));
-    let x = 0, prev = null;
-    content.stops.forEach((s) => {
-      const st = Object.assign({}, s);
-      if (st.chapter !== prev) {
-        if (prev === null) x = 620;
-        else if (st.chapter === 'harvard') x += 920;
-        else if (st.chapter === 'contact') x += 380;
-        else {
-          x += 200;
-          L.signs.push({ x, label: label[st.chapter] });
-          x += 190;
-        }
-        L.chapters.push({ id: st.chapter, x: prev === null ? L.spawn : x });
-      } else x += 300;
-      st.x = x;
-      L.stops.push(st);
-      prev = st.chapter;
+    L.chapters.push({ id: content.chapters[0].id, x: L.spawn, from: -Infinity });
+    let x = L.spawn - 50;
+    content.chapters.slice(1).forEach((ch, ci) => {
+      const list = content.stops.filter((s) => s.chapter === ch.id);
+      if (!list.length) return;
+      const finish = ci === content.chapters.length - 2;
+      x += ci === 0 ? 120 : TAIL;
+      // the last section opens with a finish line, then its own signpost
+      if (finish) L.signs.push({ x, chapter: ch.id, finish: true }, { x: x + 76, label: label[ch.id], chapter: ch.id });
+      else L.signs.push({ x, label: label[ch.id], chapter: ch.id });
+      const chapter = { id: ch.id, from: x - 40 };
+      L.chapters.push(chapter);
+      x += LEAD;
+      list.forEach((s, i) => {
+        if (i) x += s.landmark === 'gate' ? TRAVEL : GAP;
+        L.stops.push(Object.assign({}, s, { x }));
+      });
+      chapter.x = L.stops.find((s) => s.chapter === ch.id).x;
     });
     L.len = x + 340;
     L.end = L.len - 60;
     L.byId = {};
     L.stops.forEach((s) => (L.byId[s.id] = s));
-    // Chapter boundaries sit halfway between the neighbouring stops
-    L.chapters.forEach((c, i) => {
-      const first = L.stops.find((s) => s.chapter === c.id);
-      const before = L.stops[L.stops.indexOf(first) - 1];
-      c.from = i === 0 ? -Infinity : (before.x + first.x) / 2;
-    });
 
     const first = L.stops[0];
-    L.highway = first.x + 330;
-    L.citySwitch = first.x + 640;
-    L.harvard = L.byId.harvard ? L.byId.harvard.x : first.x + 920;
-    L.blend = [first.x + 450, L.harvard - 230];
-    L.cityAt = (wx) => smooth(L.blend[0], L.blend[1], wx);
+    const gate = L.stops.find((s) => s.landmark === 'gate') || first;
+    L.harvard = gate.x;
+    L.highway = first.x + 120;
+    L.citySwitch = first.x + 200;
+    L.welcome = first.x + 252;
 
-    const busy = (px, d) =>
-      L.stops.some((s) => Math.abs(s.x - px) < d) ||
-      L.signs.some((s) => Math.abs(s.x - px) < d) ||
-      Math.abs(px - L.highway) < d + 20 ||
-      Math.abs(px - L.spawn) < d;
+    // Zones: where the look of the walk changes
+    const sign = (id) => L.signs.find((s) => s.chapter === id);
+    const z = [['brooklyn', -Infinity], ['cambridge', L.citySwitch]];
+    [['experience', 'tech'], ['portfolio', 'junk'], ['interests', 'marble'], ['contact', 'finish']].forEach(([ch, id]) => {
+      if (sign(ch)) z.push([id, sign(ch).x - 36]);
+    });
+    L.zones = z.map(([id, from], i) => ({ id, from, to: i + 1 < z.length ? z[i + 1][1] : Infinity, style: ZONES[id] }));
+    L.zoneAt = (wx) => {
+      let k = 0;
+      L.zones.forEach((zz, i) => { if (wx >= zz.from) k = i; });
+      return k;
+    };
+    // How much of each zone's backdrop shows at a point; boundaries fade over a stretch
+    L.weights = (wx) => {
+      const t = L.zones.map((zz, i) => (i === 0 ? 1 : smooth(zz.from - (i === 1 ? 170 : 110), zz.from + (i === 1 ? 150 : 110), wx)));
+      return L.zones.map((zz, i) => t[i] * (i + 1 < t.length ? 1 - t[i + 1] : 1));
+    };
 
-    // Street lamps along the back of the walkway
-    for (let lx = 60; lx < L.end - 30; lx += 175)
-      if (!busy(lx, 48)) L.decor.push({ k: lx < L.citySwitch ? 'lampNY' : 'lampCam', x: lx });
-    // Something to hop on between most pairs of stops
-    const kinds = ['bench', 'crates', 'planter', 'bench', 'crate'];
+    // Props only go where nothing else is standing
+    const taken = [];
+    const free = (a, b) => taken.every(([c, d]) => b < c || a > d);
+    const place = (a, b) => free(a, b) && taken.push([a, b]) > 0;
+    taken.push([L.spawn - 36, L.spawn + 36], [L.highway - 40, L.highway + 40], [L.welcome - 30, L.welcome + 30], [L.end - 10, Infinity]);
+    L.stops.forEach((s) => {
+      const r = s.landmark === 'church' ? 44 : s.landmark === 'gate' ? 66 : 14;
+      taken.push([s.x - r, s.x + r]);
+    });
+    L.signs.forEach((s) => taken.push([s.x - 38, s.x + 38]));
+
+    // Something to hop on in every other gap between neighbouring stops
+    const kinds = { brooklyn: ['bench'], cambridge: ['bench'], tech: ['crates', 'crate'], junk: ['crate', 'crates'], marble: ['planter', 'bench'], finish: ['bench'] };
+    const span = { bench: [-15, 15], planter: [-17, 17], crate: [-9, 9], crates: [-16, 30] };
     let ki = 0;
-    for (let i = 1; i < L.stops.length; i++) {
+    for (let i = 2; i < L.stops.length; i += 2) {
       const a = L.stops[i - 1], b = L.stops[i];
       if (b.x - a.x > 420 || b.chapter !== a.chapter) continue;
-      const mx = Math.round((a.x + b.x) / 2) + (i % 2 ? 18 : -18);
-      addPlatform(L, kinds[ki++ % kinds.length], mx);
+      const mx = Math.round((a.x + b.x) / 2);
+      const list = kinds[L.zones[L.zoneAt(mx)].id];
+      const kind = list[ki % list.length];
+      if (place(mx + span[kind][0], mx + span[kind][1])) {
+        addPlatform(L, kind, mx);
+        ki++;
+      }
     }
-    addPlatform(L, 'bench', L.spawn + 230);
-    addPlatform(L, 'crates', L.highway + 150);
-    L.decor.push({ k: 'trash', x: L.spawn - 70 });
-    L.decor.push({ k: 'trash', x: L.citySwitch + 90 });
+    if (place(L.spawn + 47, L.spawn + 77)) addPlatform(L, 'bench', L.spawn + 62);
+    if (place(L.spawn - 78, L.spawn - 62)) L.decor.push({ k: 'trash', x: L.spawn - 70 });
+    // Street lamps fill what's left, styled for their zone
+    for (let lx = 60; lx < L.end - 30; lx += 150)
+      for (const dx of [0, 24, -24, 48, -48])
+        if (place(lx + dx - 9, lx + dx + 9)) {
+          L.decor.push({ k: L.zones[L.zoneAt(lx + dx)].style.lamp, x: lx + dx });
+          break;
+        }
     // Pigeons that scatter when you walk past
-    [L.spawn + 120, first.x + 200, L.harvard + 160]
-      .concat(L.stops.filter((s, i) => i % 4 === 2).map((s) => s.x + 140))
-      .forEach((px, i) => L.pigeons.push({ x: px, n: 2 + (i % 2) }));
+    const fin = sign('contact');
+    [L.spawn + 115, first.x + 120, fin ? fin.x + 90 : L.end - 120].forEach((px, i) => L.pigeons.push({ x: px, n: 2 + (i % 2) }));
     return L;
   }
 
@@ -382,29 +423,27 @@
     return c;
   }
 
-  /* ------------------------------------------------- riverbank (Cambridge) */
+  /* -------------------------------------------- riverbank (mid distance) */
   function bankLayer(L) {
     const p = PARALLAX.bank;
     const W = Math.ceil(L.len * p + 760), B = BANK_H, c = cv(W, BANK_H), g = c.getContext('2d');
     const at = (wx) => Math.round(wx * p + REF_VIEW * 0.42 * (1 - p));
+    const zone = (id) => L.zones.find((z) => z.id === id);
     const tree = sprite('tree', () => P.PROPS.tree());
+    const cypress = sprite('cypress', () => P.PROPS.cypress());
     const BRICK = '#b5604a', BRICK_D = '#94493a', TRIM = '#f1ece4', SLATE = '#5d6c7e';
 
-    // Weld Boathouse, first thing on the Cambridge side
-    const wb = at(L.citySwitch + 30);
+    // Cambridge: Weld Boathouse, Harvard's river houses, sycamores
+    const wb = at(L.citySwitch - 10);
     rect(g, wb, B - 26, 70, 26, BRICK);
     for (let y = B - 24; y < B; y += 3) rect(g, wb, y, 70, 1, BRICK_D);
-    for (let i = 0; i < 12; i++) {
-      const y = B - 26 - i;
-      rect(g, wb - 2 + i * 1.6, y, 74 - i * 3.2, 1, i ? SLATE : '#4a5868');
-    }
+    for (let i = 0; i < 12; i++) rect(g, wb - 2 + i * 1.6, B - 26 - i, 74 - i * 3.2, 1, i ? SLATE : '#4a5868');
     rect(g, wb + 30, B - 46, 10, 8, TRIM);
     rect(g, wb + 33, B - 50, 4, 4, '#7fa9b8');
     for (let i = 0; i < 4; i++) {
       rect(g, wb + 6 + i * 16, B - 14, 10, 14, '#3b2f34');
       rect(g, wb + 6 + i * 16, B - 15, 10, 1, TRIM);
     }
-    // Harvard's river houses: brick with coloured cupolas
     const hh = at(L.harvard) + 40;
     rect(g, hh - 90, B - 32, 200, 32, BRICK);
     for (let y = B - 28; y < B - 2; y += 7)
@@ -425,43 +464,305 @@
     cupola(hh - 46, 12, 34, '#c8473b');
     cupola(hh + 18, 14, 44, '#4f86cf');
     cupola(hh + 78, 10, 28, '#f6f6f2');
-    // Sycamores along Memorial Drive
-    const r = rng(5);
-    for (let x = at(L.citySwitch + 260); x < W - 40; x += 120 + Math.round(r() * 70)) {
-      if (Math.abs(x - hh) < 140) continue;
-      g.drawImage(tree, x - 26, B - 66);
+    g.drawImage(tree, hh - 150, B - 66);
+
+    // Experience: futuristic kit on the far bank
+    const tz = zone('tech');
+    if (tz) {
+      const x0 = at(tz.from), x1 = at(Math.min(tz.to, L.len));
+      for (let x = x0 + 150, i = 0; x < x1 - 20; x += 230, i++) {
+        if (i % 3 === 0) turbine(g, x, B);
+        else if (i % 3 === 1) dish(g, x, B);
+        else lab(g, x - 30, B);
+      }
+    }
+    // Portfolio: a workshop shack, scaffolding and a water tower
+    const jz = zone('junk');
+    if (jz) {
+      const x0 = at(jz.from), x1 = at(Math.min(jz.to, L.len));
+      for (let x = x0 + 70, i = 0; x < x1 - 20; x += 200, i++) {
+        if (i % 3 === 0) shack(g, x - 25, B, i);
+        else if (i % 3 === 1) scaffold(g, x, B);
+        else woodTank(g, x, B);
+      }
+    }
+    // Interests: a marble colonnade, statues and cypresses
+    const mz = zone('marble');
+    if (mz) {
+      const x0 = at(mz.from), x1 = at(Math.min(mz.to, L.len));
+      for (let x = x0 + 70, i = 0; x < x1 - 60; x += 230, i++) {
+        if (i % 2 === 0) colonnade(g, x - 45, B);
+        else statue(g, x, B);
+        g.drawImage(cypress, x + 50, B - cypress.height);
+        g.drawImage(cypress, x + 62, B - cypress.height + 6);
+      }
     }
     return c;
   }
 
+  function turbine(g, x, B) {
+    rect(g, x - 1, B - 92, 3, 92, '#eef2f6');
+    rect(g, x - 1, B - 92, 1, 92, '#cdd6e0');
+    rect(g, x - 4, B - 97, 9, 5, '#eef2f6');
+    [-90, 30, 150].forEach((deg) => {
+      const a = (deg * Math.PI) / 180;
+      for (let r = 2; r < 30; r++) rect(g, x + Math.cos(a) * r, B - 95 + Math.sin(a) * r, r < 20 ? 2 : 1, 2, '#f6f8fb');
+    });
+    rect(g, x - 1, B - 96, 3, 3, '#cdd6e0');
+  }
+  function dish(g, x, B) {
+    rect(g, x - 3, B - 18, 6, 18, '#d5dce6');
+    rect(g, x - 8, B - 3, 16, 3, '#c3ccd8');
+    for (let y = -10; y <= 10; y++)
+      for (let xx = -16; xx <= 16; xx++) {
+        const u = (xx * 0.87 + y * 0.5) / 16, v = (-xx * 0.5 + y * 0.87) / 6;
+        if (u * u + v * v <= 1) rect(g, x + xx, B - 34 + y, 1, 1, v < -0.3 ? '#ffffff' : '#e3e9f0');
+      }
+    line(g, x + 2, B - 34, x - 8, B - 50, '#9aa6b6');
+    rect(g, x - 10, B - 52, 3, 3, '#7ff3ff');
+  }
+  function lab(g, x, B) {
+    rect(g, x, B - 40, 70, 40, '#bcd9ee');
+    for (let xx = x + 5; xx < x + 70; xx += 6) rect(g, xx, B - 40, 1, 40, '#9cc0dc');
+    for (let y = B - 34; y < B; y += 7) rect(g, x, y, 70, 1, '#9cc0dc');
+    rect(g, x - 2, B - 42, 74, 2, '#e7edf3');
+    for (let y = 0; y < 14; y++) {
+      const w = Math.round(Math.sqrt(196 - y * y) * 2);
+      rect(g, x + 50 - w / 2, B - 43 - y, w, 1, y % 5 === 4 ? '#cfd8e2' : '#eef2f6');
+    }
+    rect(g, x + 49, B - 56, 2, 12, '#9cc0dc');
+  }
+  function shack(g, x, B, i) {
+    const woods = ['#a86d42', '#b6784a', '#9c6a3e', '#c4875a'];
+    for (let xx = 0; xx < 50; xx += 5) rect(g, x + xx, B - 34 + (xx % 3), 5, 34, woods[(xx / 5 + i) % 4]);
+    for (let xx = 0; xx < 50; xx += 5) rect(g, x + xx, B - 34, 1, 34, '#7d5131');
+    for (let k = 0; k < 10; k++) rect(g, x - 4 + k * 0.4, B - 36 - k, 60 - k * 1.5, 1, k % 2 ? '#a3abb5' : '#8d96a1');
+    rect(g, x + 8, B - 20, 10, 20, '#5a3a22');
+    rect(g, x + 28, B - 26, 12, 8, '#bfe6fb');
+    rect(g, x + 33, B - 26, 1, 8, '#7d5131');
+    rect(g, x + 42, B - 52, 3, 10, '#8d96a1');
+  }
+  function scaffold(g, x, B) {
+    const c = '#c99c5e';
+    [-16, 16].forEach((dx) => rect(g, x + dx, B - 70, 2, 70, c));
+    for (let y = B - 70; y < B; y += 14) {
+      rect(g, x - 18, y, 38, 2, '#b07f48');
+      line(g, x - 16, y + 2, x + 16, y + 13, c);
+    }
+    rect(g, x - 6, B - 78, 12, 8, '#d8443a');
+  }
+  function woodTank(g, x, B) {
+    [-8, 8].forEach((dx) => line(g, x + dx, B, x + dx * 0.6, B - 30, '#7d5131'));
+    rect(g, x - 11, B - 52, 22, 22, '#a86d42');
+    for (let y = B - 50; y < B - 30; y += 5) rect(g, x - 11, y, 22, 1, '#3b3036');
+    for (let i = 0; i < 8; i++) rect(g, x - 11 + i * 1.4, B - 53 - i, 22 - i * 2.8, 1, '#7d5131');
+  }
+  function colonnade(g, x, B) {
+    rect(g, x, B - 6, 92, 6, '#e3e1ea');
+    for (let i = 0; i < 6; i++) {
+      rect(g, x + 5 + i * 16, B - 58, 9, 52, '#f4f3f8');
+      rect(g, x + 5 + i * 16, B - 58, 2, 52, '#d8d5e2');
+    }
+    rect(g, x - 2, B - 66, 96, 8, '#eceaf1');
+    rect(g, x - 2, B - 60, 96, 2, '#d8d5e2');
+    for (let k = 0; k < 16; k++) rect(g, x - 2 + k * 3, B - 67 - k, 96 - k * 6, 1, '#f4f3f8');
+  }
+  function statue(g, x, B) {
+    rect(g, x - 11, B - 24, 22, 24, '#e9e7ef');
+    rect(g, x - 13, B - 26, 26, 3, '#f4f3f8');
+    rect(g, x - 4, B - 50, 8, 24, '#f4f3f8');
+    rect(g, x - 3, B - 58, 6, 7, '#f4f3f8');
+    rect(g, x + 5, B - 64, 2, 38, '#e3e1ea');
+    for (let y = 0; y < 14; y++) rect(g, x + 3, B - 40 + y, 7, 1, '#e3e1ea');
+    rect(g, x - 7, B - 46, 3, 14, '#f4f3f8');
+  }
+
   /* ------------------------------------------- near layer (the walkway) */
-  function nearLayer(L) {
-    const W = L.len, G = NEAR_TOP, c = cv(W, NEAR_TOP + NEAR_BOT), g = c.getContext('2d');
-    const S = L.citySwitch;
-    // Railings at the back of the walkway
-    const railNY = sprite('railNY', () => P.PROPS.railNY());
-    const railCam = sprite('railCam', () => P.PROPS.railCam());
-    for (let x = 0; x < W; x += 16) g.drawImage(x < S ? railNY : railCam, x, G - 30);
-    // Walkway: grey pavers in Brooklyn, red brick in Cambridge
-    for (let y = G - 8; y < G + 6; y++) {
-      const row = y - (G - 8), h = 3;
-      const band = Math.floor(row / h), off = band % 2 ? 4 : 0;
-      for (let x = 0; x < W; x++) {
-        const ny = x < S;
-        const bw = ny ? 9 : 6;
-        const joint = row % h === 0 || (x + (ny ? off : band % 2 ? 3 : 0)) % bw === 0;
-        let col;
-        if (ny) col = joint ? '#9aa1ae' : (x * 13 + band * 7) % 11 === 0 ? '#c5c9d1' : '#b5bac4';
-        else col = joint ? '#8e4232' : (x * 7 + band * 5) % 9 === 0 ? '#c97058' : '#b95d47';
-        if (row === 0) col = ny ? '#7f8796' : '#6f3427';
-        if (row === 1 && !joint) col = ny ? '#c9cdd5' : '#cf7760';
-        rect(g, x, y, 1, 1, col);
+  const WOODS = ['#b6784a', '#a86d42', '#c4875a', '#9c6a3e', '#bb8556'];
+  const CURB = {
+    pavers: ['#f2f2ee', '#cbcfd6', '#cbcfd6', '#9aa1ae'],
+    brick: ['#f2f2ee', '#cbcfd6', '#cbcfd6', '#9aa1ae'],
+    tech: ['#6b7790', '#2e3545', '#7ff3ff', '#1f2430'],
+    planks: ['#d8a46b', '#8a5a33', '#8a5a33', '#4a3020'],
+    marble: ['#ffffff', '#e6e4ec', '#d6d3df', '#bdb9ca']
+  };
+  const RGB = {};
+  const rgb = (h) => RGB[h] || (RGB[h] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+
+  // The walking surface and its front curb, material by material
+  function walkway(L, g, W, G) {
+    const rows = 18, top = G - 8;
+    const img = g.createImageData(W, rows), d = img.data;
+    const r = rng(77);
+    const plank = new Int32Array(W), start = [], seam = new Uint8Array(W);
+    for (let x = 0, id = 0; x < W; id++) {
+      const w = 5 + Math.floor(r() * 4);
+      start[id] = x;
+      for (let i = 0; i < w && x < W; i++, x++) plank[x] = id;
+      seam[x - 1] = r() < 0.15 ? 2 : 1;
+    }
+    const vein = new Set();
+    for (let i = 0; i < W / 8; i++) {
+      let x = Math.floor(r() * W), y = 2 + Math.floor(r() * 12);
+      const len = 4 + Math.floor(r() * 9), dir = r() < 0.5 ? 1 : -1;
+      for (let k = 0; k < len && y > 1 && y < 14; k++) {
+        vein.add(x * 32 + y);
+        x++;
+        if (r() < 0.45) y += dir;
       }
     }
-    // Front curb
-    rect(g, 0, G + 6, W, 1, '#f2f2ee');
-    rect(g, 0, G + 7, W, 2, '#cbcfd6');
-    rect(g, 0, G + 9, W, 1, '#9aa1ae');
+    for (let row = 0; row < rows; row++)
+      for (let x = 0; x < W; x++) {
+        const mat = L.zones[L.zoneAt(x + ((row * 5) % 7) - 3)].style.walk;
+        let c;
+        if (row >= 14) {
+          c = CURB[mat][row - 14];
+          if (mat === 'planks' && row === 15 && x % 9 === 4) c = '#2a2a33';
+        } else if (mat === 'pavers' || mat === 'brick') {
+          const ny = mat === 'pavers', band = Math.floor(row / 3);
+          const joint = row % 3 === 0 || (x + (band % 2 ? (ny ? 4 : 3) : 0)) % (ny ? 9 : 6) === 0;
+          if (ny) c = joint ? '#9aa1ae' : (x * 13 + band * 7) % 11 === 0 ? '#c5c9d1' : '#b5bac4';
+          else c = joint ? '#8e4232' : (x * 7 + band * 5) % 9 === 0 ? '#c97058' : '#b95d47';
+          if (row === 0) c = ny ? '#7f8796' : '#6f3427';
+          else if (row === 1 && !joint) c = ny ? '#c9cdd5' : '#cf7760';
+        } else if (mat === 'tech') {
+          const sx = x % 24 === 0;
+          c = (x + row * 2) % 48 < 3 ? '#454f64' : '#3d4658';
+          if (row === 7) c = '#2b3242';
+          if (sx) c = '#5fe8f5';
+          if ((x % 24 === 5 || x % 24 === 19) && (row === 3 || row === 11)) c = '#8a95ab';
+          if (row === 0) c = '#232937';
+          else if (row === 1 && !sx) c = '#58627b';
+        } else if (mat === 'planks') {
+          const id = plank[x], up = id % 9 === 4;
+          c = WOODS[(id * 7 + (id >> 2)) % WOODS.length];
+          if ((x * 3 + row * 7 + id) % 13 === 0) c = '#94603a';
+          if (up && row === 2) c = '#d9a06b';
+          if (up && row === 13) c = '#5a3a22';
+          if ((row === 3 || row === 11) && x - start[id] === 2) c = '#2a2a33';
+          if (seam[x]) c = seam[x] === 2 ? '#24170f' : '#5a3a22';
+          if (row === 0) c = '#3b2717';
+          else if (row === 1 && !seam[x]) c = '#cf9a68';
+        } else {
+          const edge = x % 22 === 0;
+          c = Math.floor(x / 22) % 3 === 1 ? '#e9e7ef' : '#efeef4';
+          if (edge || row === 7) c = '#cfccd8';
+          if (vein.has(x * 32 + row)) c = '#c6c1d4';
+          if (row === 0) c = '#bdb8ca';
+          else if (row === 1 && !edge) c = '#ffffff';
+        }
+        const v = rgb(c), i = (row * W + x) * 4;
+        d[i] = v[0]; d[i + 1] = v[1]; d[i + 2] = v[2]; d[i + 3] = 255;
+      }
+    g.putImageData(img, 0, top);
+  }
+
+  // Fences along the back of the walkway
+  const RAIL = {
+    ny(g, x0, x1, G) {
+      const t = sprite('railNY', () => P.PROPS.railNY());
+      for (let x = Math.floor(x0 / 16) * 16; x < x1; x += 16) g.drawImage(t, x, G - 30);
+    },
+    cam(g, x0, x1, G) {
+      const t = sprite('railCam', () => P.PROPS.railCam());
+      for (let x = Math.floor(x0 / 16) * 16; x < x1; x += 16) g.drawImage(t, x, G - 30);
+    },
+    tech(g, x0, x1, G) {
+      const top = G - 30;
+      g.fillStyle = 'rgba(196,236,255,0.34)';
+      g.fillRect(x0, top + 3, x1 - x0, 16);
+      for (let x = Math.ceil(x0 / 32) * 32; x < x1; x += 32)
+        for (let i = 0; i < 9; i++) {
+          rect(g, x + 9 + i, top + 15 - i, 1, 1, 'rgba(255,255,255,0.6)');
+          rect(g, x + 14 + i, top + 17 - i, 1, 1, 'rgba(255,255,255,0.35)');
+        }
+      rect(g, x0, top, x1 - x0, 2, '#d7dee8');
+      rect(g, x0, top + 2, x1 - x0, 1, '#7ff3ff');
+      rect(g, x0, top + 19, x1 - x0, 2, '#8d98ab');
+      rect(g, x0, top + 21, x1 - x0, 1, '#59637a');
+      for (let x = Math.ceil(x0 / 32) * 32; x < x1; x += 32) {
+        rect(g, x, top - 2, 2, 24, '#eef2f7');
+        rect(g, x + 2, top - 2, 1, 24, '#aab4c3');
+        rect(g, x - 1, top - 3, 4, 1, '#c9d1dc');
+        rect(g, x, top + 8, 2, 2, '#7ff3ff');
+      }
+    },
+    junk(g, x0, x1, G) {
+      const r = rng(Math.floor(x0) + 5), top = G - 30;
+      for (let x = x0; x < x1; ) {
+        const w = 3 + Math.floor(r() * 4);
+        if (r() < 0.1) { x += w; continue; }
+        const h = 13 + Math.floor(r() * 9), cut = r();
+        const col = WOODS[Math.floor(r() * WOODS.length)];
+        for (let k = 0; k < h; k++) {
+          const y = G - 8 - h + k;
+          let a = x, b = x + w - 1;
+          if (cut < 0.3 && k < w) a = x + (w - 1 - k);
+          else if (cut < 0.5 && k < 2) { a = x + 1; b = x + w - 2; }
+          if (b > a) rect(g, a, y, b - a, 1, col);
+          rect(g, Math.max(a, b - 1), y, 1, 1, '#d9a06b');
+        }
+        rect(g, x, G - 8 - h + 3, 1, h - 3, '#7d5131');
+        x += w;
+      }
+      [top + 6, top + 15].forEach((y0, j) => {
+        for (let x = x0 - 10; x < x1; ) {
+          const len = 28 + Math.floor(r() * 26), tilt = Math.floor(r() * 3) - 1;
+          for (let i = 0; i < len && x + i < x1; i++) {
+            const y = y0 + Math.round((tilt * i) / len);
+            rect(g, x + i, y, 1, 3, j ? '#9c6a3e' : '#a86d42');
+            rect(g, x + i, y, 1, 1, '#c4875a');
+            if (i % 9 === 3) rect(g, x + i, y + 1, 1, 1, '#2a2a33');
+          }
+          x += len + Math.floor(r() * 6);
+        }
+      });
+      for (let x = x0 + 40; x < x1; x += 160) {
+        for (let i = 0; i < 14; i++) rect(g, x + i, top + 12 - Math.round(i * 0.5), 1, 3, '#bb8556');
+        rect(g, x + 2, top + 12, 1, 1, '#2a2a33');
+        rect(g, x + 11, top + 7, 1, 1, '#2a2a33');
+      }
+    },
+    marble(g, x0, x1, G) {
+      const top = G - 30;
+      rect(g, x0, top, x1 - x0, 1, '#ffffff');
+      rect(g, x0, top + 1, x1 - x0, 2, '#eeedf3');
+      rect(g, x0, top + 3, x1 - x0, 1, '#cfccd8');
+      rect(g, x0, top + 18, x1 - x0, 1, '#ffffff');
+      rect(g, x0, top + 19, x1 - x0, 2, '#e6e4ec');
+      rect(g, x0, top + 21, x1 - x0, 1, '#bdb9ca');
+      const vase = [2, 3, 2, 2, 3, 4, 5, 5, 5, 4, 3, 2, 2, 3];
+      for (let x = Math.ceil((x0 - 3) / 7) * 7 + 3; x < x1; x += 7) {
+        if ((x - 3) % 49 === 0) continue;
+        vase.forEach((w, i) => {
+          rect(g, x - Math.floor(w / 2), top + 4 + i, w, 1, '#efeef4');
+          rect(g, x - Math.floor(w / 2), top + 4 + i, 1, 1, '#d4d1dd');
+        });
+      }
+      for (let x = Math.ceil((x0 - 3) / 49) * 49 + 3; x < x1; x += 49) {
+        rect(g, x - 3, top - 2, 7, 24, '#f2f1f6');
+        rect(g, x - 3, top - 2, 1, 24, '#d4d1dd');
+        rect(g, x - 4, top - 3, 9, 2, '#ffffff');
+        rect(g, x - 2, top - 6, 5, 3, '#efeef4');
+        rect(g, x - 1, top - 8, 3, 2, '#efeef4');
+      }
+    }
+  };
+
+  function nearLayer(L) {
+    const W = L.len, G = NEAR_TOP, c = cv(W, NEAR_TOP + NEAR_BOT), g = c.getContext('2d');
+    // Fences, one style per zone
+    L.zones.forEach((z) => {
+      const x0 = Math.max(0, Math.floor(z.from)), x1 = Math.min(W, Math.ceil(z.to));
+      if (x1 <= x0) return;
+      g.save();
+      g.beginPath();
+      g.rect(x0, 0, x1 - x0, G);
+      g.clip();
+      RAIL[z.style.rail](g, x0, x1, G);
+      g.restore();
+    });
+    walkway(L, g, W, G);
     // Grass verge with flowers
     for (let y = G + 10; y < G + NEAR_BOT; y++) {
       const d = y - (G + 10);
@@ -473,40 +774,34 @@
       rect(g, x, y, 1, 2, '#3a8a46');
       if (r() < 0.45) rect(g, x, y - 1, 1, 1, flowers[Math.floor(r() * flowers.length)]);
     }
-    // Props behind the walking line
-    const art = {
-      lampNY: sprite('lampNY', () => P.PROPS.lampNY()),
-      lampCam: sprite('lampCam', () => P.PROPS.lampCam()),
-      trash: sprite('trash', () => P.PROPS.trash())
-    };
+    // Lamps and bins behind the walking line
     L.decor.forEach((d) => {
       if (d.front) return;
-      const s = art[d.k];
+      const s = sprite(d.k, () => P.PROPS[d.k]());
       g.drawImage(s, Math.round(d.x - s.width / 2), G - 3 - s.height);
     });
-    // Chapter signposts
+    // Section signs: wooden posts, and a finish line at the end
     L.signs.forEach((s) => {
-      const sp = P.toCanvas(P.signpost(s.label));
+      const sp = P.toCanvas(s.finish ? P.finishSign() : P.signpost(s.label));
       g.drawImage(sp, Math.round(s.x - sp.width / 2), G - 2 - sp.height);
     });
-    // Highway sign on the way north, and a welcome sign in Cambridge
+    // Road signs for the trip north
     const hw = P.toCanvas(P.highwaySign(['BOSTON 215 MI', 'I-95 NORTH >']));
     g.drawImage(hw, Math.round(L.highway - hw.width / 2), G - 4 - hw.height);
     const wc = P.toCanvas(P.highwaySign(['CAMBRIDGE']));
-    g.drawImage(wc, Math.round(L.citySwitch + 160 - wc.width / 2), G - 4 - wc.height);
-    // Landmark stops get a building instead of a pedestal
+    g.drawImage(wc, Math.round(L.welcome - wc.width / 2), G - 4 - wc.height);
+    // Landmarks, then a pedestal at every stop
     const ped = sprite('pedestal', () => P.PROPS.pedestal());
     L.stops.forEach((s) => {
-      if (s.landmark === 'school') {
-        const sc = sprite('school', () => P.school());
-        g.drawImage(sc, Math.round(s.x - 46 - sc.width / 2), G - 5 - sc.height);
+      if (s.landmark === 'church') {
+        const ch = sprite('church', () => P.church());
+        g.drawImage(ch, Math.round(s.x - ch.width / 2), G - 5 - ch.height);
       } else if (s.landmark === 'gate') {
         const gt = sprite('gate', () => P.gate());
         g.drawImage(gt, Math.round(s.x - gt.width / 2), G - 5 - gt.height);
       }
       g.drawImage(ped, Math.round(s.x - ped.width / 2), G - 2 - ped.height);
     });
-    // End of the road
     const bar = P.toCanvas(P.barrier());
     g.drawImage(bar, L.end + 10, G - 3 - bar.height);
     return c;
@@ -558,11 +853,26 @@
   const sunArt = () => once('sun', sun);
   const cloudArt = () => once('clouds', () => clouds(17, 5, false));
 
+  // The far backdrop for each zone: an image plus where its left edge sits
+  // in far-layer coordinates (world x * PARALLAX.far)
+  function backdrops(L) {
+    const p = PARALLAX.far, sk = skylines(), made = {};
+    return L.zones.map((z) => {
+      const kind = z.style.far;
+      if (kind === 'nyc') return { img: sk.nyc, origin: z.from === -Infinity ? 0 : Math.round(z.from * p - 30) };
+      if (kind === 'bos') return { img: sk.bos, origin: 0 };
+      const origin = Math.round(z.from * p - 110);
+      const width = Math.round((Math.min(z.to, L.len) - z.from) * p + 900);
+      if (!made[kind]) made[kind] = HA.backdrops[kind](width);
+      return { img: made[kind], origin };
+    });
+  }
+
   function build(content) {
     const L = layout(content);
     return {
       L,
-      far: skylines(),
+      far: backdrops(L),
       bank: bankLayer(L),
       near: nearLayer(L),
       front: frontProps(L),
@@ -574,7 +884,7 @@
   }
 
   HA.scenery = {
-    build, sky, layout, sprite, rng, cv, skylines, sunArt, cloudArt,
+    build, sky, layout, backdrops, sprite, rng, cv, skylines, sunArt, cloudArt, ZONES,
     NEAR_TOP, NEAR_BOT, FAR_H, BANK_H, PARALLAX, REF_VIEW
   };
 })();

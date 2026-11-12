@@ -5,10 +5,10 @@
    Stop fields
      id         used in links, e.g. henryaronofsky.github.io/#bumblebee
      chapter    which header section it belongs to
-     icon       small pixel icon (see ICONS in sprites.js)
-     bigIcon    big background icon (defaults to icon)
-     landmark   'school' | 'gate' to stand in a building instead of on a pedestal
+     icon       pixel icon (see ICONS in sprites.js)
+     landmark   'church' | 'gate' to stand in front of a building
      kicker     tiny label above the title
+     tag        a few words for the header's drop-down list
      title, subtitle, dates, place, highlight
      summary    first paragraph of the expanded panel
      facts      [label, value] pairs shown as a small table
@@ -23,10 +23,10 @@ window.HA = window.HA || {};
 HA.content = {
   person: {
     name: 'Henry Aronofsky',
-    role: 'Mechanical Engineering Undergrad at Harvard University',
+    role: 'Student at Harvard University',
     tagline: 'Building tools at the intersection of hardware and software — from ocean robotics to factory automation.',
-    location: 'Cambridge, MA',
-    focus: 'Robotics, manufacturing software',
+    location: 'Boston, MA',
+    focus: 'Mechanical Engineering',
     status: 'Open to opportunities',
     email: 'henryaronofsky@gmail.com',
     linkedin: 'https://www.linkedin.com/in/haronofsky/',
@@ -37,7 +37,7 @@ HA.content = {
 
   chapters: [
     { id: 'start', label: 'Start' },
-    { id: 'harvard', label: 'Harvard' },
+    { id: 'education', label: 'Education' },
     { id: 'experience', label: 'Experience' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'interests', label: 'Interests' },
@@ -47,9 +47,10 @@ HA.content = {
   stops: [
     {
       id: 'saint-anns',
-      chapter: 'start',
+      tag: 'High school',
+      chapter: 'education',
       icon: 'book',
-      landmark: 'school',
+      landmark: 'church',
       kicker: 'Education',
       title: "Saint Ann's School",
       subtitle: 'High School Diploma',
@@ -63,153 +64,113 @@ HA.content = {
     },
     {
       id: 'harvard',
-      chapter: 'harvard',
+      tag: 'B.S. Mechanical Engineering',
+      chapter: 'education',
       icon: 'cap',
       landmark: 'gate',
       kicker: 'Education',
-      title: 'Harvard University',
-      subtitle: 'B.S. in Mechanical Engineering',
-      dates: 'Aug 2024 – Feb 2028 (expected)',
+      title: 'Harvard College',
+      subtitle: 'B.S. in Mechanical Engineering (accredited)',
+      dates: 'Expected graduation: May 2028',
       place: 'Cambridge, MA',
-      highlight: 'Cumulative GPA 3.9',
+      highlight: 'GPA 3.9 / 4.0',
       facts: [
-        ['Degree', 'B.S. in Mechanical Engineering'],
-        ['GPA', '3.9'],
-        ['Graduation', 'Feb 2028 (expected)'],
+        ['Degree', 'Bachelor of Science in Mechanical Engineering (accredited)'],
+        ['GPA', '3.9 / 4.0'],
+        ['Graduation', 'May 2028 (expected)'],
         ['Focus', 'Robotics, manufacturing software']
       ],
       related: [
-        { label: 'EuroRackingIt', note: 'ES50 project', to: 'eurorackingit' },
-        { label: 'Bumblebee', note: 'ES51 project', to: 'bumblebee' },
-        { label: 'Microrobotics Laboratory', note: 'Research', to: 'microrobotics' },
-        { label: 'Harvard Jazz Orchestra', note: 'Double bass', to: 'jazz' },
-        { label: 'Harvard-Radcliffe Dramatic Club', note: 'Theater technician', to: 'theater' }
+        { label: 'BumbleBee', note: 'Class project', to: 'bumblebee' },
+        { label: 'Microrobotics Laboratory', note: 'Engineering research', to: 'microrobotics' },
+        { label: 'Harvard-Radcliffe Dramatic Club', note: 'Sound engineer', to: 'hrdc' },
+        { label: 'Jazz Performance', note: 'Double bass', to: 'jazz' }
       ]
     },
 
     {
       id: 'divergent',
+      tag: 'Q&A engineering intern',
       chapter: 'experience',
       icon: 'printer',
       kicker: 'Experience',
-      title: 'Divergent',
+      title: 'Divergent 3D',
       subtitle: 'Q&A Engineering Intern',
-      dates: 'May 2026 – Sep 2026'
-    },
-    {
-      id: 'microrobotics',
-      chapter: 'experience',
-      icon: 'rov',
-      kicker: 'Experience',
-      title: 'Harvard Microrobotics Laboratory',
-      subtitle: 'Researcher',
-      dates: 'Aug 2025 – Present',
-      highlight: 'Ocean exploration and bio-data recovery tools',
-      bullets: ['Design and optimize ocean exploration and bio-data recovery tools and systems'],
-      related: [{ label: 'Jellyfish Motion Rig', note: 'Project from the lab', to: 'jellyfish' }]
-    },
-    {
-      id: 'seas',
-      chapter: 'experience',
-      icon: 'chalkboard',
-      kicker: 'Experience',
-      title: 'Harvard SEAS',
-      subtitle: 'Course Assistant',
-      dates: 'Jan 2025 – Apr 2025',
-      highlight: 'Teaching, labs and the machine shop',
+      dates: 'May 2026 – Sep 2026',
+      highlight: 'Inspection solutions for metal 3D printing',
       bullets: [
-        'Advised and taught students on their projects and homework, and helped run labs and office hours with the teaching staff',
-        'Operated lathes, CNC machines, and other machine shop equipment'
+        'Work with material and Q&A engineers to develop innovative inspection solutions to streamline metal 3D printing.',
+        'Build a full-stack web application that can interface with printer data output and display relevant information to operators.'
       ]
     },
     {
+      id: 'microrobotics',
+      tag: 'Engineering research',
+      chapter: 'experience',
+      icon: 'rov',
+      kicker: 'Experience · Ocean Shot',
+      title: 'Harvard Microrobotics Laboratory',
+      subtitle: 'Engineering Research',
+      dates: 'Aug 2025 – Present',
+      highlight: 'Deep-sea biopsy sampler for jellyfish, 1000 m+',
+      bullets: [
+        'Design and test a deep-sea electromagnetic biopsy sampler to be used in the field on jellyfish at depths exceeding 1000 meters.',
+        'Fabricate gantry systems, 3D print and laser cut bracket supports, build charging and discharging circuits to control probe.'
+      ],
+      related: [{ label: 'Jellyfish Motion Rig', note: 'Project from the lab', to: 'jellyfish' }]
+    },
+    {
+      id: 'hrdc',
+      tag: 'Sound engineer',
+      chapter: 'experience',
+      icon: 'speaker',
+      kicker: 'Experience',
+      title: 'Harvard-Radcliffe Dramatic Club',
+      subtitle: 'Sound Engineer / Sound Designer',
+      dates: 'Aug 2024 – Present',
+      highlight: 'Soundscapes for large-scale musicals',
+      bullets: [
+        'Plan and execute immersive soundscapes for large-scale musical theater productions.',
+        "Load in, maintain, and fix speaker systems across Harvard's three historic live theater venues."
+      ],
+      related: [{ label: 'Musical Theater', note: 'Why I love it', to: 'theater' }]
+    },
+    {
       id: 'nanotronics',
+      tag: 'Design engineering intern',
       chapter: 'experience',
       icon: 'chart',
-      bigIcon: 'microscope',
       kicker: 'Experience',
       title: 'Nanotronics',
       subtitle: 'Design Engineering Intern',
       dates: 'May 2021 – Sep 2023',
-      highlight: 'Factory-efficiency interface deployed at scale',
+      highlight: 'Data visualisation tools for factory efficiency',
       bullets: [
-        'Designed and implemented software solutions and visualizations for bespoke product lines',
-        'Developed a factory-efficiency tracking interface that was deployed at scale to clients'
+        'Work with designers and engineers to improve factory efficiency through data visualisation tools.',
+        'Develop ways of increasing factory throughput and increasing operator training speed.'
       ]
-    },
-    {
-      id: 'nebula',
-      chapter: 'experience',
-      icon: 'laptop',
-      bigIcon: 'code',
-      kicker: 'Experience',
-      title: 'Nebula',
-      subtitle: 'Software Intern',
-      dates: 'Mar 2019 – Mar 2021',
-      highlight: 'Full-stack web applications',
-      bullets: ['Developed full-stack web applications']
-    },
-    {
-      id: 'tivoli',
-      chapter: 'experience',
-      icon: 'sailboat',
-      kicker: 'Experience',
-      title: 'Tivoli Sailing Company',
-      subtitle: 'Summer Camp Counselor',
-      dates: 'Jan 2018 – Jul 2023'
     },
 
     {
-      id: 'bumblebee',
-      chapter: 'portfolio',
-      icon: 'robot',
-      bigIcon: 'bee',
-      kicker: 'ES51 · Fall 2024 · Team of 5',
-      title: 'Bumblebee',
-      subtitle: "Competition robot built for Harvard ES51's Turf Wars",
-      highlight: 'Two full rounds, zero technical failures',
-      summary:
-        'A competition robot designed and built with a team of five ("The Hasanov Syndicate") for Harvard ES51\'s Turf Wars competition — a scoring arena that rewarded climbing ramps, collecting and storing objects, and a stacking challenge, all inside an 11"×11"×11" size limit.',
-      media: [
-        { type: 'image', src: 'portfolio/es51/bot.png', alt: 'Bumblebee, the finished competition robot', caption: 'Bumblebee — final build' },
-        { type: 'image', src: 'portfolio/es51/explode.png', alt: 'Exploded CAD assembly of the scoop-lift mechanism', caption: 'Exploded assembly of the scoop-lift mechanism' }
-      ],
-      sections: [
-        {
-          heading: 'The challenge',
-          text: [
-            'Turf Wars scored robots on climbing a 30° ramp, collecting and storing six ping pong balls, picking up dog toys and hockey pucks to deposit in perimeter boxes, ringing a bell, and a separate stacking challenge with a ring, ball, and cube. Teams were limited to six actuators, four sheets of acrylic, and roughly ten weeks to design, fabricate, and test.'
-          ]
-        },
-        {
-          heading: 'Design',
-          text: [
-            'We compared concepts — a roller, a Sphero-style ball, a grabber, and several scoop variants — against each other with a Pugh matrix scored on height, hill-climbing ability, ball storage, and pick-up/drop-off performance. The winning "Dual Action" concept used a single 3D-printed scoop with built-in arm storage, driven by one servo through a hex shaft on a delrin support, so the same mechanism handled both ramp climbing and object collection. We also wired the remote control with rubber bands and inverted the polarity on a couple of components to make driving more intuitive.'
-          ]
-        },
-        {
-          heading: 'Result',
-          text: ["We prioritized endurance over raw scoring potential. Bumblebee didn't win the competition, but it completed two full rounds with no technical failures."]
-        }
-      ],
-      links: [{ label: 'Download full report (PDF)', href: 'portfolio/es51/Report.pdf' }]
-    },
-    {
       id: 'eurorackingit',
+      tag: 'Analog synthesizer',
       chapter: 'portfolio',
       icon: 'synth',
-      bigIcon: 'scope',
-      kicker: 'ES50 · Team of 2',
+      kicker: 'Personal Project',
       title: 'EuroRackingIt',
-      subtitle: 'Fully analog 12-note piano built for Harvard ES50',
-      highlight: 'No microcontroller — a pure analog signal path',
+      subtitle: 'A fully analog 12-note synthesizer',
+      highlight: 'Schmitt trigger oscillators, no microcontroller',
       summary:
-        'A fully analog 12-note piano, built with a teammate for Harvard ES50. The circuit turns key presses into a variable voltage, tunes and shapes that voltage into a musical waveform, and pushes it out as audio — no microcontroller involved.',
+        'A fully analog 12-note synthesizer. Key presses become a variable voltage that is tuned, shaped into a musical waveform, and pushed out as audio — with no microcontroller anywhere in the signal path.',
+      bullets: [
+        'Design and build a fully analog 12-note synthesizer.',
+        'Implement Schmitt trigger oscillators, temperature feedback loops, and waveform converters to make a fully functional musical device.'
+      ],
       media: [
-        { type: 'image', src: 'portfolio/es50/circuit.png', alt: 'Breadboard build of the analog synth', caption: 'Breadboard build' },
-        { type: 'video', src: 'portfolio/es50/oscilloscope.mp4', poster: 'portfolio/es50/oscilloscope-poster.jpg', caption: 'The sawtooth output on the oscilloscope' },
-        { type: 'image', src: 'portfolio/es50/schem.png', alt: 'Full circuit schematic', caption: 'Full schematic' },
-        { type: 'image', src: 'portfolio/es50/flow.png', alt: 'Signal flow block diagram, from keyboard to audio output', caption: 'Signal flow, keyboard to audio output', wide: true }
+        { type: 'image', src: 'portfolio/es50/breadboard-circuit.png', alt: 'Breadboard build of the analog synth', caption: 'Breadboard build' },
+        { type: 'image', src: 'portfolio/es50/oscilloscope-sawtooth.jpg', alt: 'The synth\'s sawtooth wave on an oscilloscope', caption: 'The sawtooth output on the oscilloscope' },
+        { type: 'image', src: 'portfolio/es50/circuit-schematic.png', alt: 'Full circuit schematic', caption: 'Full schematic' },
+        { type: 'image', src: 'portfolio/es50/signal-flow-diagram.png', alt: 'Signal flow block diagram, from keyboard to audio output', caption: 'Signal flow, keyboard to audio output', wide: true }
       ],
       sections: [
         {
@@ -230,7 +191,64 @@ HA.content = {
       links: [{ label: 'Download full report (PDF)', href: 'portfolio/es50/Report.pdf' }]
     },
     {
+      id: 'bumblebee',
+      tag: 'Competition robot',
+      chapter: 'portfolio',
+      icon: 'robot',
+      kicker: 'Class Project · ES51 · Team of 5',
+      title: 'BumbleBee',
+      subtitle: '4WD, gearbox and servo actuated competition robot',
+      highlight: 'Two full rounds, zero technical failures',
+      summary:
+        'A competition robot designed and built with a team of five ("The Hasanov Syndicate") for Harvard ES51\'s Turf Wars competition — a scoring arena that rewarded climbing ramps, collecting and storing objects, and a stacking challenge, all inside an 11"×11"×11" size limit.',
+      bullets: [
+        'Design a 4WD, gearbox and servo actuated robot that can translate in three dimensions and interact with various objects.',
+        'Use turning (lathe), 3D printing, laser cutting, CNC milling, drill press, and saws to build parts.'
+      ],
+      media: [
+        { type: 'image', src: 'portfolio/es51/bumblebee-robot.png', alt: 'BumbleBee, the finished competition robot', caption: 'BumbleBee — final build' },
+        { type: 'image', src: 'portfolio/es51/scoop-lift-exploded-view.png', alt: 'Exploded CAD assembly of the scoop-lift mechanism', caption: 'Exploded assembly of the scoop-lift mechanism' }
+      ],
+      sections: [
+        {
+          heading: 'The challenge',
+          text: [
+            'Turf Wars scored robots on climbing a 30° ramp, collecting and storing six ping pong balls, picking up dog toys and hockey pucks to deposit in perimeter boxes, ringing a bell, and a separate stacking challenge with a ring, ball, and cube. Teams were limited to six actuators, four sheets of acrylic, and roughly ten weeks to design, fabricate, and test.'
+          ]
+        },
+        {
+          heading: 'Design',
+          text: [
+            'We compared concepts — a roller, a Sphero-style ball, a grabber, and several scoop variants — against each other with a Pugh matrix scored on height, hill-climbing ability, ball storage, and pick-up/drop-off performance. The winning "Dual Action" concept used a single 3D-printed scoop with built-in arm storage, driven by one servo through a hex shaft on a delrin support, so the same mechanism handled both ramp climbing and object collection. We also wired the remote control with rubber bands and inverted the polarity on a couple of components to make driving more intuitive.'
+          ]
+        },
+        {
+          heading: 'Result',
+          text: ["We prioritized endurance over raw scoring potential. BumbleBee didn't win the competition, but it completed two full rounds with no technical failures."]
+        }
+      ],
+      links: [{ label: 'Download full report (PDF)', href: 'portfolio/es51/Report.pdf' }]
+    },
+    {
+      id: 'classic-cars',
+      tag: 'Summer work',
+      chapter: 'portfolio',
+      icon: 'car',
+      kicker: 'Summer Work',
+      title: 'Classic Car Maintenance',
+      subtitle: 'A 1951 Pontiac, a 1972 Ford and a 1979 Jaguar',
+      highlight: 'Carburetors, coolant hoses and electrical systems',
+      summary: 'Summers spent keeping three classic cars on the road — a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.',
+      bullets: ['Rebuild carburetors, replace coolant hoses and redesign electrical systems on a 1951 Pontiac, a 1972 Ford, and a 1979 Jaguar.'],
+      media: [
+        { type: 'image', src: 'portfolio/cars/refitted-v8-engine.jpg', alt: 'Refitted V8 engine', caption: 'Refitted engine', tall: true },
+        { type: 'image', src: 'portfolio/cars/rebuilding-the-carburetor.jpg', alt: 'Working on the carburetor on top of the V8', caption: 'Rebuilding the carburetor', tall: true },
+        { type: 'image', src: 'portfolio/cars/replacing-coolant-hoses.jpg', alt: 'Reaching under the hood to replace a coolant hose', caption: 'Replacing coolant hoses', tall: true }
+      ]
+    },
+    {
       id: 'jellyfish',
+      tag: 'Lab research rig',
       chapter: 'portfolio',
       icon: 'jelly',
       kicker: 'Harvard Microrobotics Laboratory · Ongoing',
@@ -240,8 +258,10 @@ HA.content = {
       summary:
         'A stepper-motor-driven rig built to observe and record jellyfish movement, part of ongoing research at the Harvard Microrobotics Laboratory into ocean exploration and bio-data recovery tools.',
       media: [
-        { type: 'image', src: 'portfolio/woodLab/jelly-web.jpg', alt: 'Jellyfish enclosure used for observation', caption: 'Jellyfish enclosure' },
-        { type: 'image', src: 'portfolio/woodLab/stepper-web.jpg', alt: 'Stepper motor and driver controlled by an Arduino Mega', caption: 'Stepper driver and control electronics' }
+        { type: 'image', src: 'portfolio/wood-lab/jellyfish-in-the-tank.jpg', alt: 'Jellyfish swimming in a round, green-lit observation tank', caption: 'Jellyfish in the observation tank' },
+        { type: 'image', src: 'portfolio/wood-lab/gantry-rig-setup.jpg', alt: 'Aluminium gantry with stepper motors mounted over a glass tank', caption: 'The gantry rig over the tank', tall: true },
+        { type: 'image', src: 'portfolio/wood-lab/camera-and-gantry.jpg', alt: 'Camera on a tripod filming the tank under the gantry, shaded with a cloth', caption: 'Setting up the camera to film the tank', tall: true },
+        { type: 'image', src: 'portfolio/wood-lab/stepper-driver.jpg', alt: 'Stepper motor and driver controlled by an Arduino Mega', caption: 'Stepper driver and control electronics', tall: true }
       ],
       sections: [
         {
@@ -253,6 +273,7 @@ HA.content = {
     },
     {
       id: 'double-bass',
+      tag: 'Built from scratch',
       chapter: 'portfolio',
       icon: 'bass',
       kicker: 'Side project',
@@ -262,8 +283,8 @@ HA.content = {
       summary:
         'A four-string upright bass built from scratch out of reclaimed lumber — neck, pegbox, and body carved and assembled by hand, strung and tuned to play.',
       media: [
-        { type: 'image', src: 'portfolio/sideProjects/doubleBass/DB.png', alt: 'Scratch-built double bass, neck and body detail', caption: 'Neck and body detail', tall: true },
-        { type: 'image', src: 'portfolio/sideProjects/doubleBass/Playing.png', alt: 'Playing the finished double bass', caption: 'Finished instrument', tall: true }
+        { type: 'image', src: 'portfolio/double-bass/neck-and-body-detail.png', alt: 'Scratch-built double bass, neck and body detail', caption: 'Neck and body detail', tall: true },
+        { type: 'image', src: 'portfolio/double-bass/playing-the-finished-bass.png', alt: 'Playing the finished double bass', caption: 'Finished instrument', tall: true }
       ],
       sections: [
         {
@@ -276,41 +297,19 @@ HA.content = {
       related: [{ label: 'Jazz Performance', note: 'Where it gets played', to: 'jazz' }]
     },
     {
-      id: 'vehicle',
-      chapter: 'portfolio',
-      icon: 'car',
-      bigIcon: 'sparkplug',
-      kicker: 'Side project',
-      title: 'Personal Vehicle Work',
-      subtitle: 'Carburetor rebuild and engine work on a V8',
-      highlight: 'Carb rebuild, coolant hoses, refitted engine',
-      summary: 'Maintenance and repair work on a carbureted V8 — rebuilding the carburetor, replacing coolant hoses, and refitting the engine.',
-      media: [
-        { type: 'image', src: 'portfolio/sideProjects/cars/engine.jpg', alt: 'Refitted V8 engine', caption: 'Refitted engine', tall: true },
-        { type: 'video', src: 'portfolio/sideProjects/cars/carbs.mp4', poster: 'portfolio/sideProjects/cars/carbs-poster.jpg', caption: 'Rebuilding the carburetor' },
-        { type: 'video', src: 'portfolio/sideProjects/cars/coolant-hoses.mp4', poster: 'portfolio/sideProjects/cars/coolant-hoses-poster.jpg', caption: 'Replacing coolant hoses' }
-      ],
-      sections: [
-        {
-          heading: 'Overview',
-          text: ['Working on an older carbureted V8, from rebuilding the carburetor to replacing worn coolant hoses and getting the refitted engine running again.']
-        }
-      ]
-    },
-    {
       id: 'plumbing',
+      tag: 'Hands-on building',
       chapter: 'portfolio',
       icon: 'wrench',
-      bigIcon: 'hammer',
       kicker: 'Side project',
       title: 'Plumbing & Construction',
       subtitle: 'Pipe fitting, plumbing, and general construction work',
       highlight: 'Drain lines, hose fittings and fence stakes',
       summary: 'Hands-on plumbing and construction work — cutting and fitting pipe, running a drain line, and building with basic hand tools.',
       media: [
-        { type: 'video', src: 'portfolio/sideProjects/plumbingAndConstruction/plumbing.mp4', poster: 'portfolio/sideProjects/plumbingAndConstruction/plumbing-poster.jpg', caption: 'Connecting a washing machine hose' },
-        { type: 'video', src: 'portfolio/sideProjects/plumbingAndConstruction/cutting-pipe.mp4', poster: 'portfolio/sideProjects/plumbingAndConstruction/cutting-pipe-poster.jpg', caption: 'Cutting drain pipe to fit' },
-        { type: 'video', src: 'portfolio/sideProjects/plumbingAndConstruction/stakes.mp4', poster: 'portfolio/sideProjects/plumbingAndConstruction/stakes-poster.jpg', caption: 'Driving stakes for a fence' }
+        { type: 'image', src: 'portfolio/plumbing-and-construction/connecting-a-washer-hose.jpg', alt: 'Connecting the hose behind a washing machine', caption: 'Connecting a washing machine hose', tall: true },
+        { type: 'image', src: 'portfolio/plumbing-and-construction/cutting-drain-pipe.jpg', alt: 'Cutting a length of black drain pipe with a hacksaw', caption: 'Cutting drain pipe to fit', tall: true },
+        { type: 'image', src: 'portfolio/plumbing-and-construction/driving-fence-stakes.jpg', alt: 'Driving a wooden fence stake into the ground with a sledgehammer', caption: 'Driving stakes for a fence', tall: true }
       ],
       sections: [
         {
@@ -322,28 +321,27 @@ HA.content = {
 
     {
       id: 'theater',
+      tag: 'On stage and backstage',
       chapter: 'interests',
       icon: 'spotlight',
-      bigIcon: 'masks',
       kicker: 'Interest',
       title: 'Musical Theater',
-      subtitle: 'Theater Technician · Harvard-Radcliffe Dramatic Club',
-      dates: 'Feb 2024 – Present',
+      subtitle: 'On stage and behind the board',
       highlight: 'Both sides of the curtain',
       summary:
         "Musical theater is where I learned to work the way engineering teams work — a fixed deadline, a room full of people with different specialties, and a show that has to run whether or not everything went to plan. I've spent time on both sides of the curtain: performing, and building and running the technical side of productions.",
       sections: [
         {
           text: [
-            'What keeps me coming back is the rehearsal process. A show gets built the same way a prototype does — rough it in, run it, find what breaks, fix it, run it again — except the iteration loop is measured in days and the final revision is performed live.',
-            "I've been a theater technician with the Harvard-Radcliffe Dramatic Club since February 2024, working the technical side of its productions."
+            'What keeps me coming back is the rehearsal process. A show gets built the same way a prototype does — rough it in, run it, find what breaks, fix it, run it again — except the iteration loop is measured in days and the final revision is performed live.'
           ]
         }
       ],
-      tags: ['Theater technician, HRDC', 'Tech & stagecraft']
+      related: [{ label: 'Harvard-Radcliffe Dramatic Club', note: 'Sound engineer and designer', to: 'hrdc' }]
     },
     {
       id: 'jazz',
+      tag: 'Upright bass',
       chapter: 'interests',
       icon: 'notes',
       kicker: 'Interest',
@@ -362,15 +360,42 @@ HA.content = {
           ]
         }
       ],
+      media: [
+        { type: 'image', src: 'interests/music/playing-bass-with-the-band.jpg', alt: 'Henry playing upright bass with a jazz group', caption: 'On upright bass with the band', tall: true }
+      ],
       related: [{ label: 'Scratch-Built Double Bass', note: 'The bass I built', to: 'double-bass' }],
-      tags: ['Double bassist, Harvard Jazz Orchestra', 'Upright bass', 'Standards']
+      tags: ['Jazz', 'Double bass', 'Standards']
+    },
+    {
+      id: 'sailing',
+      tag: 'Summers on the water',
+      chapter: 'interests',
+      icon: 'sailboat',
+      kicker: 'Interest',
+      title: 'Sailing',
+      subtitle: 'Summers on the water',
+      highlight: 'Counselor at Tivoli Sailing Company, 2018 – 2023',
+      facts: [
+        ['Camp', 'Tivoli Sailing Company'],
+        ['Role', 'Summer Camp Counselor'],
+        ['Years', 'Jan 2018 – Jul 2023']
+      ]
+    },
+    {
+      id: 'board-games',
+      tag: 'Strategy',
+      chapter: 'interests',
+      icon: 'games',
+      kicker: 'Interest',
+      title: 'Board Games',
+      subtitle: 'Strategy around a table'
     },
 
     {
       id: 'contact',
+      tag: 'Say hello',
       chapter: 'contact',
       icon: 'mailbox',
-      bigIcon: 'envelope',
       kicker: 'Thanks for walking by',
       title: "Let's talk",
       subtitle: 'Email, LinkedIn, GitHub — or grab my résumé',

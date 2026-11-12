@@ -27,6 +27,7 @@
       switching = true;
     }
     if (HA.ui.panel.isOpen()) HA.ui.panel.close();
+    if (HA.ui.menu.isOpen) HA.ui.menu.close();
     document.body.classList.toggle('mode-vertical', want === 'vertical');
     document.body.classList.toggle('mode-side', want === 'side');
     modeName = want;
