@@ -56,11 +56,12 @@ HA.content = {
       subtitle: 'High School Diploma',
       dates: 'Sep 2009 – Jul 2024',
       place: 'Brooklyn, NY',
-      facts: [
-        ['Diploma', 'High School'],
-        ['Years', 'Sep 2009 – Jul 2024'],
-        ['Location', 'Brooklyn, NY']
-      ]
+      sections: [
+        {
+          heading: 'Brooklyn Highschool',
+          text: ['I grew up in the lower east side of Manhattan, commuting to my school every morning usually by Citi Bike. Saint Ann\'s had a heavy emphasis on the arts and creativity and it was there that I first fell in love with jazz and theater.']
+        },
+      ],
     },
     {
       id: 'harvard',
@@ -70,15 +71,15 @@ HA.content = {
       landmark: 'gate',
       kicker: 'Education',
       title: 'Harvard College',
-      subtitle: 'B.S. in Mechanical Engineering (accredited)',
+      subtitle: 'B.S. in Mechanical Engineering',
       dates: 'August 2024 - May 2028',
       place: 'Cambridge, MA',
       highlight: 'GPA 3.9 / 4.0',
-      facts: [
-        ['Degree', 'Bachelor of Science in Mechanical Engineering (accredited)'],
-        ['GPA', '3.9 / 4.0'],
-        ['Graduation', 'May 2028 (expected)'],
-        ['Focus', 'Mechatronics, industrial design']
+      sections: [
+        {
+          heading: 'College',
+          text: ['I am currently pursuing a degree in mechanical engineering. College has openend my world view, allowing me to get a glimpse at the depth and breadth of my field while simultaneously exposing me to a lot of music and theater.']
+        },
       ],
       related: [
         { label: 'BumbleBee', note: 'Class project', to: 'bumblebee' },
