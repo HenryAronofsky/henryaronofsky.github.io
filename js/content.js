@@ -71,14 +71,14 @@ HA.content = {
       kicker: 'Education',
       title: 'Harvard College',
       subtitle: 'B.S. in Mechanical Engineering (accredited)',
-      dates: 'Expected graduation: May 2028',
+      dates: 'August 2024 - May 2028',
       place: 'Cambridge, MA',
       highlight: 'GPA 3.9 / 4.0',
       facts: [
         ['Degree', 'Bachelor of Science in Mechanical Engineering (accredited)'],
         ['GPA', '3.9 / 4.0'],
         ['Graduation', 'May 2028 (expected)'],
-        ['Focus', 'Robotics, manufacturing software']
+        ['Focus', 'Mechatronics, industrial design']
       ],
       related: [
         { label: 'BumbleBee', note: 'Class project', to: 'bumblebee' },

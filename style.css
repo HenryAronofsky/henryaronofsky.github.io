@@ -298,6 +298,7 @@ body.mode-side .menu { display: none; }
 /* -------------------------------------------------------------- stage */
 .stage { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
 #world { position: absolute; inset: 0; display: block; touch-action: manipulation; }
+#world-front { position: absolute; inset: 0; display: block; pointer-events: none; }
 body.mode-side { overflow: hidden; height: 100vh; height: 100dvh; }
 
 .title-card {

@@ -18,7 +18,11 @@
     const world = SC.build(content), L = world.L;
     const RM = matchMedia('(prefers-reduced-motion: reduce)');
     const canvas = document.getElementById('world');
-    const ctx = canvas.getContext('2d');
+    // The walkway and everything on it go on a second canvas stacked above
+    // the title card, so the card sits behind the church and other landmarks
+    const front = document.getElementById('world-front');
+    const backCtx = canvas.getContext('2d'), frontCtx = front.getContext('2d');
+    let ctx = backCtx;
     const stage = document.getElementById('stage');
     const titleEl = document.getElementById('title-card');
     const controlsEl = document.getElementById('controls');
@@ -82,7 +86,7 @@
     let smoke = [];
     // The coin-operated viewer at the far left end of the walk
     const TX = L.telescope;
-    const TELE = { id: 'telescope', x: TX, kicker: 'Tourist viewer', title: 'Look across the harbor', subtitle: 'Pay 5¢ to use', cta: 'insert 5¢' };
+    const TELE = { id: 'telescope', x: TX, kicker: 'Tourist viewer', title: 'Use binoculars', cta: 'insert 5¢' };
     const scope = { state: 'off', t: 0, used: false, paid: false, cx: 272, cy: 70, vx: 0, vy: 0, zoom: 2, left: 0, aim: null, drag: null, wheel: 0, shown: -1, keys: { left: false, right: false, up: false, down: false, run: false } };
     const scopeHint = document.getElementById('scope-hint');
     const scopeTime = document.getElementById('scope-time');
@@ -107,7 +111,12 @@
       canvas.height = Math.round(vh * dpr);
       canvas.style.width = vw + 'px';
       canvas.style.height = vh + 'px';
-      ctx.imageSmoothingEnabled = false;
+      front.width = canvas.width;
+      front.height = canvas.height;
+      front.style.width = canvas.style.width;
+      front.style.height = canvas.style.height;
+      backCtx.imageSmoothingEnabled = false;
+      frontCtx.imageSmoothingEnabled = false;
       skyCanvas = SC.sky(VW + 2, SHORE + 4, SHORE);
       waters = L.zones.map((z) => waterGradient(z.style.water[0], z.style.water[1]));
       scopeSky = SC.sky(VW + 2, VH * 2, VH * 2);
@@ -151,6 +160,9 @@
 
     function draw() {
       if (!skyCanvas) return;
+      frontCtx.setTransform(1, 0, 0, 1, 0, 0);
+      frontCtx.clearRect(0, 0, front.width, front.height);
+      ctx = backCtx;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.imageSmoothingEnabled = false;
       if (scope.state === 'open' || scope.state === 'view' || scope.state === 'close') return drawScope();
@@ -171,6 +183,9 @@
       drawBirds();
       // riverbank, walkway, props
       layer(world.bank, SC.PARALLAX.bank, G - 10 - SC.BANK_H);
+      // in front of the title card from here on
+      ctx = frontCtx;
+      ctx.imageSmoothingEnabled = false;
       layer(world.near, 1, G - SC.NEAR_TOP);
       drawFlags();
       world.front.forEach((f) => {
@@ -188,6 +203,7 @@
       // the screen goes dark on the way into the viewer, and lightens on the way out
       if (scope.state === 'dark') box(0, 0, VW + 1, VH + 1, '#0b0912', clamp(scope.t / 0.3, 0, 1));
       if (scope.state === 'out') box(0, 0, VW + 1, VH + 1, '#0b0912', clamp(1 - scope.t / 0.35, 0, 1));
+      ctx = backCtx;
     }
 
     function drawClouds(list, p, y0, spread, alpha) {
