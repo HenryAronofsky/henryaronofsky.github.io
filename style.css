@@ -840,7 +840,6 @@ body.mode-vertical .cta-key, body.mode-vertical .panel-hint { display: none; }
   padding: 4svh 0 48svh;
   text-align: center;
 }
-.w-barrier { display: inline-block; max-width: 90%; height: auto; } /* drawn at the scene's pixel size */
 
 @media (max-width: 760px) {
   .dock-in { min-height: 54px; gap: 6px 14px; }

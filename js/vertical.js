@@ -79,9 +79,8 @@
           (s.highlight ? `<span class="hl">${esc(s.highlight)}</span>` : '') +
           `</span><span class="w-tap">Tap to expand</span></button></div>`;
       });
-      // the same construction barrier that closes the desktop walk
-      const bar = HA.pix.toCanvas(HA.pix.barrier());
-      h += `</section><p class="w-end"><img class="px w-barrier" src="${bar.toDataURL()}" alt="More coming soon" width="${bar.width}" height="${bar.height}" style="width: calc(var(--px) * ${bar.width})"></p>`;
+      // room to scroll the last stop up past the dock
+      h += `</section><div class="w-end" aria-hidden="true"></div>`;
       root.innerHTML = h;
     }
     function onRootClick(e) {

@@ -5,7 +5,7 @@
    Stop fields
      id         used in links, e.g. henryaronofsky.github.io/#bumblebee
      chapter    which header section it belongs to
-     icon       pixel icon (see ICONS in sprites.js)
+     icon       pixel icon (see ICONS in sprites.js; Experience stops use the company's logo)
      landmark   'church' | 'gate' to stand in front of a building
      kicker     tiny label above the title
      tag        a few words for the header's drop-down list
@@ -93,7 +93,7 @@ HA.content = {
       id: 'divergent',
       tag: 'Q&A engineering intern',
       chapter: 'experience',
-      icon: 'printer',
+      icon: 'divergent',
       kicker: 'Experience',
       title: 'Divergent 3D',
       subtitle: 'Q&A Engineering Intern',
@@ -108,7 +108,7 @@ HA.content = {
       id: 'microrobotics',
       tag: 'Engineering research',
       chapter: 'experience',
-      icon: 'rov',
+      icon: 'microlab',
       kicker: 'Experience · Ocean Shot',
       title: 'Harvard Microrobotics Laboratory',
       subtitle: 'Engineering Research',
@@ -124,7 +124,7 @@ HA.content = {
       id: 'hrdc',
       tag: 'Sound engineer',
       chapter: 'experience',
-      icon: 'speaker',
+      icon: 'hrdc',
       kicker: 'Experience',
       title: 'Harvard-Radcliffe Dramatic Club',
       subtitle: 'Sound Engineer / Sound Designer',
@@ -140,7 +140,7 @@ HA.content = {
       id: 'nanotronics',
       tag: 'Design engineering intern',
       chapter: 'experience',
-      icon: 'chart',
+      icon: 'nanotronics',
       kicker: 'Experience',
       title: 'Nanotronics',
       subtitle: 'Design Engineering Intern',

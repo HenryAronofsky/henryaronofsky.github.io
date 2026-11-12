@@ -354,17 +354,20 @@
           box(x + 9, 0, 6, G + 2, '#ffffff', a * 0.5);
         }
         if (t < 0.35) return;
-        const f = frames.idle[0].r;
-        const reveal = clamp((t - 0.35) / 0.45, 0, 1);
-        const rows = Math.ceil(f.height * reveal);
-        ctx.drawImage(f, 0, f.height - rows, f.width, rows, R(x), R(y + f.height - rows), f.width * k, rows * k);
-        const white = clamp(1 - (t - 0.55) / 0.4, 0, 1);
-        if (white > 0) {
-          ctx.globalAlpha = white;
-          ctx.drawImage(ghost, 0, f.height - rows, f.width, rows, R(x), R(y + f.height - rows), f.width * k, rows * k);
-          ctx.globalAlpha = 1;
+        // once the character lands, draw only the squat frame (no standing copy behind it)
+        if (t < 0.95) {
+          const f = frames.idle[0].r;
+          const reveal = clamp((t - 0.35) / 0.45, 0, 1);
+          const rows = Math.ceil(f.height * reveal);
+          ctx.drawImage(f, 0, f.height - rows, f.width, rows, R(x), R(y + f.height - rows), f.width * k, rows * k);
+          const white = clamp(1 - (t - 0.55) / 0.4, 0, 1);
+          if (white > 0) {
+            ctx.globalAlpha = white;
+            ctx.drawImage(ghost, 0, f.height - rows, f.width, rows, R(x), R(y + f.height - rows), f.width * k, rows * k);
+            ctx.globalAlpha = 1;
+          }
+          return;
         }
-        if (t < 0.95) return;
       }
       const f = charFrame();
       put(char.face > 0 ? f.r : f.l, x, y);
@@ -477,8 +480,8 @@
         char.vy = Math.max(-T.maxFall, char.vy - g * dt);
       }
       const ox = char.x, oy = char.y;
-      char.x = clamp(char.x + char.vx * dt, 16, L.end + 4);
-      if (char.x === 16 || char.x === L.end + 4) char.vx = 0;
+      char.x = clamp(char.x + char.vx * dt, 16, L.end);
+      if (char.x === 16 || char.x === L.end) char.vx = 0;
       char.dist += Math.abs(char.x - ox);
       walked += Math.abs(char.x - ox);
       if (Math.abs(char.x - ox) > 0 && !autoRun && (keys.left || keys.right)) ui.controls.did('move');
@@ -683,13 +686,6 @@
       // the coin plate lights up once paid, and blinks to invite you over
       const lit = (scope.state === 'coin' && scope.paid) || (scope.state !== 'off' && scope.state !== 'coin') || (on && Math.floor(time * 2.5) % 2 === 0);
       put(teleArt[lit ? 1 : 0], x, y);
-      // a spinning coin hovers over it until you've had a look
-      if (!scope.used && !on && scope.state === 'off') {
-        const w = [3, 2, 1, 2][Math.floor(time * 6) % 4];
-        const by = y - 7 + (RM.matches ? 0 : Math.sin(time * 3) * 1.5);
-        box(x + 8.5 - w / 2, by, w, 3, w === 1 ? '#d8a62b' : '#f8d34a');
-        if (w === 3) box(x + 8, by + 1, 1, 1, '#fff1a6');
-      }
     }
 
     function drawCoin() {
@@ -703,7 +699,7 @@
 
     function useTelescope() {
       if (scope.state !== 'off' || spawning) return;
-      ui.bubble.hide();
+      hideBubble();
       const spot = TX + 16; // just to its right
       if (Math.abs(char.x - spot) < 2 && char.ground) insertCoin();
       else walkTo(spot, insertCoin, -1);
@@ -1211,6 +1207,13 @@
       return bd < T.near ? best : null;
     }
 
+    // Hide the bubble and forget which stop it was for, so updateUI pops it
+    // back up (e.g. once a panel opened from it is closed again).
+    function hideBubble() {
+      ui.bubble.hide();
+      active = null;
+    }
+
     function updateUI() {
       // pop-up bubble
       const fast = autoRun && Math.abs(char.vx) > 260;
@@ -1339,7 +1342,7 @@
     function goTo(id, openAfter) {
       const s = L.byId[id];
       if (!s) return;
-      ui.bubble.hide();
+      hideBubble();
       walkTo(standX(s), openAfter ? () => open(id) : null, 1);
     }
     function goChapter(id) {

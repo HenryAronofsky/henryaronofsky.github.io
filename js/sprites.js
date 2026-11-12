@@ -793,6 +793,73 @@
     }
   });
 
+  // Company logos for the Experience stops, redrawn as pixel art from each
+  // organisation's real mark.
+  Object.assign(ICONS, {
+    // Divergent 3D: a grey downward triangle with a green blade in the corner
+    divergent(g) {
+      g.poly([[1, 1], [16, 1], [14.5, 3.5], [5.5, 3.5], [12, 16.5], [18.5, 7.5], [20.5, 5.5], [12, 23]], 'X');
+      g.poly([[8, 4.5], [17, 1.5], [23, 0.5], [14, 15.5], [18, 5.5]], 'g');
+      g.rim();
+    },
+    // Harvard Microrobotics Lab: the Veritas shield on a RoboBee's wings and
+    // three pairs of legs. Hand-placed left half, mirrored for the right.
+    microlab(g) {
+      const half = [
+        '............',
+        '............',
+        '............',
+        'ww..........',
+        'wwww........',
+        '.wxxww......',
+        '..wwxxww....',
+        '...wwwxrrrrr',
+        '....wwwrrrrr',
+        '..WWW..rwwwr',
+        '.WWWW..rwwwr',
+        '..WW...rrrrr',
+        '.......rrrww',
+        '...WWWWrrrww',
+        '..W....rrrrr',
+        '.W..WWWWrrrr',
+        'W..W.....rrr',
+        '..W...WWWWrr',
+        '..W..W.....r',
+        '.W...W......',
+        '....W.......',
+        '....W.......'
+      ];
+      g.blit(Px.from(half.map((r) => r + [...r].reverse().join(''))));
+      g.rim('r');
+    },
+    // Harvard-Radcliffe Dramatic Club: big white HR / DC on a red oval that
+    // leans down to the right
+    hrdc(g) {
+      const a = 0.62, ca = Math.cos(a), sa = Math.sin(a);
+      for (let y = 0; y < 24; y++)
+        for (let x = 0; x < 24; x++) {
+          const dx = x + 0.5 - 12.5, dy = y + 0.5 - 12.5;
+          const u = (dx * ca + dy * sa) / 12.5, v = (-dx * sa + dy * ca) / 9.3;
+          if (u * u + v * v <= 1) g.set(x, y, 'r');
+        }
+      g.rim();
+      const letters = {
+        H: ['xx.xx', 'xx.xx', 'xxxxx', 'xx.xx', 'xx.xx', 'xx.xx'],
+        R: ['xxxx.', 'xx.xx', 'xx.xx', 'xxxx.', 'xx.xx', 'xx.xx'],
+        D: ['xxxx.', 'xx.xx', 'xx.xx', 'xx.xx', 'xx.xx', 'xxxx.'],
+        C: ['.xxxx', 'xx...', 'xx...', 'xx...', 'xx...', '.xxxx']
+      };
+      [['H', 4, 4], ['R', 10, 4], ['D', 6, 12], ['C', 12, 12]].forEach(([ch, ox, oy]) =>
+        letters[ch].forEach((row, y) => [...row].forEach((p, x) => p === 'x' && g.get(ox + x, oy + y) !== '.' && g.set(ox + x, oy + y, 'w'))));
+    },
+    // Nanotronics: the red bow-tie "N"
+    nanotronics(g) {
+      g.poly([[4, 6], [8.5, 6], [12, 12], [4, 23]], 'r');
+      g.poly([[20, 1], [20, 18], [15.5, 18], [12, 12]], 'r');
+      g.rim();
+    }
+  });
+
   function icon(name) {
     const g = new Px(24, 24);
     const after = ICONS[name](g);
@@ -1349,22 +1416,6 @@
     return g;
   }
 
-  // Construction barrier at the end of the road
-  function barrier() {
-    const t = text('MORE SOON', 'k');
-    const w = t.w + 12, g = new Px(w, 34);
-    g.rect(3, 10, 3, 24, 'X');
-    g.rect(w - 6, 10, 3, 24, 'X');
-    g.rect(0, 0, w, 10, 'w');
-    for (let x = -10; x < w; x += 8) g.poly([[x, 10], [x + 4, 10], [x + 9, 0], [x + 5, 0]], 'a');
-    g.rect(0, 14, w, 4, 'w');
-    for (let x = -10; x < w; x += 8) g.poly([[x, 18], [x + 4, 18], [x + 8, 14], [x + 4, 14]], 'a');
-    g.outline();
-    g.rect(3, 2, t.w + 6, 7, 'W');
-    g.blit(t, 6, 3);
-    return g;
-  }
-
   // St. Ann & the Holy Trinity, Brooklyn Heights: Gothic Revival brownstone
   // with a central tower that lost its spire in 1906 (now flat-topped).
   function church() {
@@ -1537,7 +1588,7 @@
 
   HA.pix = {
     PAL, Px, ICON_NAMES: Object.keys(ICONS),
-    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, church, finishSign, barrier, text,
+    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, church, finishSign, text,
     toCanvas, iconURL
   };
 })();

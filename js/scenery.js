@@ -92,7 +92,7 @@
       chapter.x = L.stops.find((s) => s.chapter === ch.id).x;
     });
     L.len = x + 340;
-    L.end = L.len - 60;
+    L.end = L.len - 16; // walkable right up to the edge, same as the left side
     L.byId = {};
     L.stops.forEach((s) => (L.byId[s.id] = s));
 
@@ -865,8 +865,6 @@
       }
       g.drawImage(ped, Math.round(s.x - ped.width / 2), G - 2 - ped.height);
     });
-    const bar = P.toCanvas(P.barrier());
-    g.drawImage(bar, L.end + 10, G - 3 - bar.height);
     return c;
   }
 
