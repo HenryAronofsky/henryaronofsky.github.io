@@ -703,6 +703,7 @@ body.is-scoping .bubble { opacity: 0 !important; pointer-events: none !important
 .noscript h1 { font-family: var(--font-pixel); }
 
 /* --------------------------------------------- the mobile vertical walk */
+body.mode-vertical #world-front,
 body.mode-vertical .title-card,
 body.mode-vertical .controls,
 body.mode-vertical .bubble { display: none; }
