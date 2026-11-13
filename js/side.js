@@ -61,7 +61,7 @@
     const char = { x: L.spawn, y: 0, vx: 0, vy: 0, face: 1, ground: true, plat: null, squat: false, coyote: 0, buffer: 0, jumpHeld: false, dist: 0, land: 0, blinkAt: 2.5, dropUntil: 0 };
     const cam = { x: 0, lead: 0.36 };
     const keys = { left: false, right: false, down: false, run: false };
-    let spawnT = 0, spawning = true, autoRun = null, active = null, chapter = null, camStart = 0, chromeOn = false;
+    let spawnT = 0, spawning = true, autoRun = null, active = null, chapter = null, chromeOn = false;
     let idleT = 0, feedT = 0, tossT = 0, crumbs = [];
     let particles = [], birds = [], nextFlock = 6, mainZone = 0, guideShown = false, guideGone = false, walked = 0;
     let pigeons = [];
@@ -124,6 +124,10 @@
       maskFull = null;
       document.documentElement.style.setProperty('--px', S + 'px');
       if (!spawning) camera(1);
+      // Re-place the overlays straight away rather than on the next frame
+      measureTitle();
+      placeTitle();
+      if (guideShown && !guideGone) placeGuide();
       draw();
     }
     function waterGradient(top, bottom) {
@@ -1244,23 +1248,96 @@
         chromeOn = forward;
         ui.chrome(forward);
       }
-      // title card drifts with parallax and fades as you leave
-      const dx = cam.x - camStart;
-      const fade = clamp(1 - Math.abs(dx) / 200, 0, 1);
-      titleEl.style.opacity = fade.toFixed(3);
-      titleEl.style.visibility = fade < 0.01 ? 'hidden' : '';
-      titleEl.style.transform = `translate(${Math.round(-dx * 0.55 * S)}px, 0)`;
-      // controls guide follows its spot in the world
+      placeTitle();
       if (guideShown && !guideGone) {
-        const half = controlsEl.offsetWidth / 2;
-        const gx = clamp((L.spawn - cam.x) * S, half + 10, Math.max(half + 10, vw - half - 10));
-        controlsEl.style.transform = `translate(${Math.round(gx)}px, ${Math.round((G - 38) * S - 8)}px) translate(-50%, -100%)`;
+        placeGuide();
         const done = ui.controls.done;
         if ((done.has('move') && walked > 160) || char.x > L.stops[0].x - 60 || char.x < TX + 40) {
           guideGone = true;
           ui.controls.hide();
         }
       }
+    }
+
+    // Where the camera settles with the character standing at the start.
+    // Worked out from the current window size every time, so resizing never
+    // leaves the title card measuring itself against a stale camera position.
+    const camHome = () => clamp(L.spawn - VW * 0.36, 0, Math.max(0, L.len - VW));
+
+    // The title card's right edge before any drift (CSS px). Re-measured on
+    // resize and whenever the card itself changes size (e.g. once fonts load).
+    // `ink` is the right edge of what's actually drawn (name, lines, chips),
+    // which is usually well short of the box's max-width.
+    const tBox = { left: 0, right: 0, ink: 0, bottom: 0, shift: 0, on: true };
+    const inkRange = document.createRange();
+    function measureTitle() {
+      tBox.left = titleEl.offsetLeft;
+      tBox.right = titleEl.offsetLeft + titleEl.offsetWidth;
+      tBox.bottom = titleEl.offsetTop + titleEl.offsetHeight;
+      const shiftNow = titleEl.getBoundingClientRect().left - titleEl.offsetLeft;
+      let ink = tBox.left;
+      titleEl.querySelectorAll('.kicker, h1, .role').forEach((el) => {
+        inkRange.selectNodeContents(el);
+        ink = Math.max(ink, inkRange.getBoundingClientRect().right - shiftNow);
+      });
+      titleEl.querySelectorAll('.chips li').forEach((li) => (ink = Math.max(ink, li.getBoundingClientRect().right - shiftNow)));
+      tBox.ink = Math.min(tBox.right, Math.ceil(ink) + 3); // + the name's pixel outline
+    }
+    const titleWatch = new ResizeObserver(() => {
+      if (stage.hidden) return;
+      measureTitle();
+      placeTitle();
+    });
+
+    // The first tall building on the walk (drawn in front of the title card).
+    // At the start the card keeps clear of it; once you walk on, it slides over.
+    const tall = L.stops.find((s) => s.x > L.spawn && (s.landmark === 'church' || s.landmark === 'gate'));
+    const tallArt = tall && (tall.landmark === 'church' ? P.church() : P.gate());
+    const tallLeft = tall ? tall.x - Math.round(tallArt.w / 2) : Infinity;
+
+    // Title card: fully opaque while the character is at or left of the start,
+    // fading out over the first stretch of the walk to the right. It drifts
+    // with parallax as the camera moves, but never past the right edge of the
+    // window, or behind the first building while you're still at the start.
+    function placeTitle() {
+      const home = camHome();
+      const fade = clamp(1 - (char.x - L.spawn) / 200, 0, 1);
+      const drift = -(cam.x - home) * 0.55 * S;
+      let limit = vw - 16 - tBox.ink;
+      if (tall && (G - 5 - tallArt.h) * S < tBox.bottom)
+        limit = Math.min(limit, (tallLeft - Math.min(cam.x, home)) * S - 20 - tBox.ink);
+      // Pulled back left at most to the window edge, or (when the two share
+      // the same height, on short windows) as far as the guide can move aside
+      let floor = 16 - tBox.left;
+      if (guideShown && !guideGone) {
+        const g = guideSpot();
+        if (g.top < tBox.bottom + 12) floor = Math.max(floor, Math.min(g.x, g.half + 10) + g.half + 20 - tBox.left);
+      }
+      const shift = Math.min(drift, Math.max(limit, floor));
+      tBox.shift = shift;
+      tBox.on = fade >= 0.01;
+      titleEl.style.opacity = fade.toFixed(3);
+      titleEl.style.visibility = fade < 0.01 ? 'hidden' : '';
+      titleEl.style.transform = `translate(${Math.round(shift)}px, 0)`;
+    }
+
+    // Controls guide: sits above the start, nudged left so it stays clear of
+    // the first chapter signpost (and of the title card on short windows),
+    // and always inside the window.
+    const firstSign = L.signs[0];
+    const signLeft = firstSign ? firstSign.x - Math.round(P.signpost(firstSign.label).w / 2) : Infinity;
+    function guideSpot() {
+      const half = controlsEl.offsetWidth / 2 + 3; // + the card's pixel border
+      const bottom = Math.round((G - 38) * S - 8);
+      const x = Math.min((L.spawn - cam.x) * S, (signLeft - cam.x) * S - 40 - half);
+      return { x, half, bottom, top: bottom - controlsEl.offsetHeight - 3 };
+    }
+    function placeGuide() {
+      const g = guideSpot();
+      let gx = g.x;
+      if (tBox.on && g.top < tBox.bottom + 12) gx = Math.min(gx, tBox.left + tBox.shift - 20 - g.half);
+      gx = clamp(gx, g.half + 10, Math.max(g.half + 10, vw - g.half - 10));
+      controlsEl.style.transform = `translate(${Math.round(gx)}px, ${g.bottom}px) translate(-50%, -100%)`;
     }
 
     function showGuide() {
@@ -1394,9 +1471,10 @@
         else if (spawning) spawnT = 1.2;
       } else if (c && c.id !== L.chapters[0].id) char.x = standX(L.stops.find((x) => x.chapter === c.id));
       cam.lead = 0.36;
-      cam.x = clamp(char.x - VW * (char.x === L.spawn ? 0.3 : 0.36), 0, L.len - VW);
+      cam.x = clamp(char.x - VW * 0.36, 0, L.len - VW);
       zw = L.weights(cam.x + VW * 0.4);
-      camStart = clamp(L.spawn - VW * 0.3, 0, L.len - VW);
+      titleWatch.observe(titleEl);
+      if (document.fonts) document.fonts.ready.then(() => { measureTitle(); placeTitle(); });
       if (char.x !== L.spawn) {
         guideGone = true;
         ui.controls.hide();
@@ -1417,6 +1495,7 @@
 
     function stop() {
       pause();
+      titleWatch.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKey);
