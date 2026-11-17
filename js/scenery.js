@@ -54,6 +54,7 @@
   /* -------------------------------------------------------------- layout */
   const GAP = 124; // between neighbouring stops: one step between their pop-up ranges
   const LEAD = 150; // from a section's sign to its first stop
+  const CONTACT_LEAD = 84; // the mailbox stands just past the Contact sign
   const TAIL = 180; // from a section's last stop to the next sign
   const TRAVEL = 380; // Saint Ann's in Brooklyn to Harvard in Cambridge, about a four-second walk
 
@@ -77,14 +78,11 @@
     content.chapters.slice(1).forEach((ch, ci) => {
       const list = content.stops.filter((s) => s.chapter === ch.id);
       if (!list.length) return;
-      const finish = ci === content.chapters.length - 2;
       x += ci === 0 ? 120 : TAIL;
-      // the last section opens with a finish line, then its own signpost
-      if (finish) L.signs.push({ x, chapter: ch.id, finish: true }, { x: x + 76, label: label[ch.id], chapter: ch.id });
-      else L.signs.push({ x, label: label[ch.id], chapter: ch.id });
+      L.signs.push({ x, label: label[ch.id], chapter: ch.id });
       const chapter = { id: ch.id, from: x - 40 };
       L.chapters.push(chapter);
-      x += LEAD;
+      x += ch.id === 'contact' ? CONTACT_LEAD : LEAD;
       list.forEach((s, i) => {
         if (i) x += s.landmark === 'gate' ? TRAVEL : GAP;
         L.stops.push(Object.assign({}, s, { x }));
@@ -161,7 +159,7 @@
         }
     // Pigeons that scatter when you walk past
     const fin = sign('contact');
-    [L.spawn + 115, first.x + 120, fin ? fin.x + 90 : L.end - 120].forEach((px, i) => L.pigeons.push({ x: px, n: 2 + (i % 2) }));
+    [L.spawn + 115, first.x + 120, fin ? fin.x + CONTACT_LEAD + 90 : L.end - 120].forEach((px, i) => L.pigeons.push({ x: px, n: 2 + (i % 2) }));
     return L;
   }
 
@@ -843,9 +841,9 @@
       const s = sprite(d.k, () => P.PROPS[d.k]());
       g.drawImage(s, Math.round(d.x - s.width / 2), G - 3 - s.height);
     });
-    // Section signs: wooden posts, and a finish line at the end
+    // Section signs: wooden posts
     L.signs.forEach((s) => {
-      const sp = P.toCanvas(s.finish ? P.finishSign() : P.signpost(s.label));
+      const sp = P.toCanvas(P.signpost(s.label));
       g.drawImage(sp, Math.round(s.x - sp.width / 2), G - 2 - sp.height);
     });
     // Road signs for the trip north

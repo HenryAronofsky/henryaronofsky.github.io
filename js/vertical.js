@@ -56,14 +56,12 @@
         `<p class="w-hint"><span class="w-arrow" aria-hidden="true">↓</span> Scroll to walk · tap a card to open it</p>` +
         `</section>`;
       let prev = null;
-      const last = content.chapters[content.chapters.length - 1].id;
       content.stops.forEach((s) => {
         if (s.chapter !== prev) {
           if (prev) h += `</section>`;
           const ch = content.chapters.find((c) => c.id === s.chapter);
           h += `<section class="w-chapter" data-chapter="${esc(s.chapter)}">`;
-          if (s.chapter === last) h += `<h2 class="w-banner w-finish"><span>${esc(ch.label)}</span></h2>`;
-          else h += `<h2 class="w-banner"><span>${esc(ch.label)}</span></h2>`;
+          h += `<h2 class="w-banner"><span>${esc(ch.label)}</span></h2>`;
           prev = s.chapter;
         }
         if (s.landmark === 'gate') h += `<div class="w-travel" aria-hidden="true"><span>Boston · 215 mi</span></div>`;

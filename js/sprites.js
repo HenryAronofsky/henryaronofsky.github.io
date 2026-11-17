@@ -1474,23 +1474,6 @@
     return g;
   }
 
-  // Chequered finish-line banner
-  function finishSign() {
-    const W = 64, g = new Px(W, 46);
-    g.rect(3, 4, 3, 42, 'X');
-    g.rect(W - 6, 4, 3, 42, 'X');
-    g.rect(2, 2, 5, 2, 'x');
-    g.rect(W - 7, 2, 5, 2, 'x');
-    g.rect(0, 6, W, 15, 'w');
-    for (let y = 6; y < 21; y += 3)
-      for (let x = 0; x < W; x += 3) if ((x / 3 + (y - 6) / 3) % 2 === 0) g.rect(x, y, 3, 3, 'k');
-    g.outline();
-    const t = text('FINISH', 'k');
-    g.rect(32 - Math.ceil(t.w / 2) - 3, 8, t.w + 6, 11, 'w');
-    g.blit(t, 32 - Math.ceil(t.w / 2), 11);
-    return g;
-  }
-
   /* ---------------------------------------------------------------- font */
   // 3x5 capitals (a few glyphs are wider). Used for signs painted in the world.
   const FONT = {
@@ -1588,7 +1571,7 @@
 
   HA.pix = {
     PAL, Px, ICON_NAMES: Object.keys(ICONS),
-    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, church, finishSign, text,
+    buildCharacter, icon, gearIcon, PROPS, signpost, highwaySign, gate, church, text,
     toCanvas, iconURL
   };
 })();

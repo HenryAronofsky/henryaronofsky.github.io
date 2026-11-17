@@ -786,20 +786,6 @@ body.mode-vertical .cta-key, body.mode-vertical .panel-hint { display: none; }
   opacity: 0;
 }
 .w-banner.is-in span { animation: pop 0.45s both cubic-bezier(0.2, 0.9, 0.3, 1.4); opacity: 1; }
-.w-finish { align-items: center; }
-.w-finish span { color: var(--ink); background: #fff; }
-.w-finish::before, .w-finish::after {
-  content: '';
-  flex: none;
-  width: 36px;
-  height: 30px;
-  margin: 0 8px;
-  background: conic-gradient(#1d1a28 25%, #fff 0 50%, #1d1a28 0 75%, #fff 0) 0 0 / 12px 12px;
-  box-shadow: -3px 0 0 var(--line), 3px 0 0 var(--line), 0 -3px 0 var(--line), 0 3px 0 var(--line);
-  opacity: 0;
-  transition: opacity 0.4s;
-}
-.w-finish.is-in::before, .w-finish.is-in::after { opacity: 1; }
 .panel .soon { color: var(--ink-soft); font-style: italic; }
 .w-travel {
   display: flex;

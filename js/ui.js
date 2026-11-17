@@ -300,7 +300,7 @@
         <li><span>LinkedIn</span><a href="${esc(p.linkedin)}" target="_blank" rel="noopener">linkedin.com/in/haronofsky</a></li>
         <li><span>GitHub</span><a href="${esc(p.github)}" target="_blank" rel="noopener">github.com/HenryAronofsky</a></li>
       </ul>
-      <p class="links"><a class="btn btn-primary" href="${esc(p.resume)}" download>Download résumé (PDF)</a></p>`;
+      <p class="links"><a class="btn btn-primary" href="${esc(p.resume)}" download>Download resume (PDF)</a></p>`;
     }
     if (s.links)
       h += `<p class="links">${s.links.map((l) => `<a class="btn" href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join('')}</p>`;

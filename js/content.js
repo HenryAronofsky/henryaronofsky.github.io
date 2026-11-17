@@ -25,7 +25,7 @@ HA.content = {
     name: 'Henry Aronofsky',
     role: 'Student at Harvard University',
     tagline: 'Building tools at the intersection of hardware and software — from ocean robotics to factory automation.',
-    location: 'Boston, MA',
+    location: 'Cambridge, MA',
     focus: 'Mechanical Engineering',
     status: 'Open to opportunities',
     email: 'henryaronofsky@gmail.com',
@@ -91,16 +91,16 @@ HA.content = {
 
     {
       id: 'divergent',
-      tag: 'Q&A engineering intern',
+      tag: 'QA engineering intern',
       chapter: 'experience',
       icon: 'divergent',
       kicker: 'Experience',
       title: 'Divergent 3D',
-      subtitle: 'Q&A Engineering Intern',
+      subtitle: 'QA Engineering Intern',
       dates: 'May 2026 – Sep 2026',
       highlight: 'Inspection solutions for metal 3D printing',
       bullets: [
-        'Work with material and Q&A engineers to develop innovative inspection solutions to streamline metal 3D printing.',
+        'Work with material and QA engineers to develop innovative inspection solutions to streamline metal 3D printing.',
         'Build a full-stack web application that can interface with printer data output and display relevant information to operators.'
       ]
     },
@@ -394,7 +394,7 @@ HA.content = {
       icon: 'mailbox',
       kicker: 'Thanks for walking by',
       title: "Let's talk",
-      subtitle: 'Email, LinkedIn, GitHub — or grab my résumé',
+      subtitle: 'Email, LinkedIn, GitHub — or grab my resume',
       contact: true
     }
   ]
